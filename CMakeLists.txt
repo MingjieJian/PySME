@@ -80,7 +80,16 @@ install(TARGETS _smelib
     LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/pysme/smelib
 )
 
-# Install data files
+# Install smelib data files
 install(DIRECTORY smelib/src/data/
     DESTINATION ${SKBUILD_PLATLIB_DIR}/pysme/smelib/data
+)
+
+# Install pysme data files
+install(FILES
+    src/pysme/config_default.json
+    src/pysme/datafiles_atmospheres.json
+    src/pysme/datafiles_nlte.json
+    src/pysme/lineprof.dat.gz
+    DESTINATION ${SKBUILD_PLATLIB_DIR}/pysme
 )

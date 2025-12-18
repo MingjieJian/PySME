@@ -60,9 +60,9 @@ dev = [
 ]
 
 [tool.scikit-build]
-wheel.packages = ["src/pysme"]
 cmake.build-type = "Release"
-sdist.include = ["smelib/*", "cmake/*"]
+sdist.include = ["smelib/*", "cmake/*", "src/pysme/*.json", "src/pysme/*.gz"]
+wheel.packages = ["src/pysme"]
 
 [tool.cibuildwheel]
 build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
@@ -78,7 +78,7 @@ repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 [tool.cibuildwheel.macos]
 before-all = "brew install gcc"
 archs = ["arm64"]
-environment = { FC = "gfortran-14", CC = "gcc-14", CXX = "g++-14" }
+environment = { FC = "gfortran-14", CC = "gcc-14", CXX = "g++-14", MACOSX_DEPLOYMENT_TARGET = "14.0" }
 repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}"
 
 [tool.cibuildwheel.windows]
