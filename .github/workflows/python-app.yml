@@ -38,12 +38,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up QEMU (Linux ARM64)
-        if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Install gfortran (Windows)
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2

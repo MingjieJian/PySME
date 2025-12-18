@@ -72,7 +72,7 @@ test-command = "python -c \"from pysme.smelib import _smelib; print(_smelib.Libr
 
 [tool.cibuildwheel.linux]
 before-all = "yum install -y gcc-gfortran || apk add gfortran"
-archs = ["x86_64", "aarch64"]
+archs = ["x86_64"]
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.macos]
