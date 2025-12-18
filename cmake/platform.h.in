@@ -1,0 +1,2 @@
+#define PLATFORM "@PLATFORM@"
+#define DATA_DIR ""
