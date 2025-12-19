@@ -43,11 +43,16 @@ jobs:
           update: false
           install: mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-ninja
 
+      - name: Add MSYS2 to PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22
         env:
           CIBW_BUILD_VERBOSITY: 1
-          CIBW_ENVIRONMENT_WINDOWS: 'PATH="C:\\msys64\\mingw64\\bin;{PATH}" FC=gfortran CC=gcc CXX=g++ CMAKE_GENERATOR=Ninja'
+          CIBW_ENVIRONMENT_WINDOWS: 'FC=gfortran CC=gcc CXX=g++ CMAKE_GENERATOR=Ninja'
 
       - uses: actions/upload-artifact@v4
         with:
