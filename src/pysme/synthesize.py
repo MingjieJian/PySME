@@ -984,7 +984,7 @@ class Synthesizer:
             # instrument broadening
             if "iptype" in sme:
                 logger.debug("Apply detector broadening")
-                ipres = sme.ipres if np.size(sme.ipres) == 1 else sme.ipres[segment]
+                ipres = sme.ipres.item() if np.size(sme.ipres) == 1 else sme.ipres[segment]
                 sint = broadening.apply_broadening(ipres, wint, sint, type=sme.iptype, sme=sme)
 
             # Apply the correction on Ha, Hb and Hgamma line here.
