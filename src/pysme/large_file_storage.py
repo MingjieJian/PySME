@@ -24,6 +24,7 @@ from astropy.utils.data import (
 from tqdm.auto import tqdm
 from tqdm.utils import CallbackIOWrapper
 
+from .config import Config
 from .util import show_progress_bars
 
 logger = logging.getLogger(__name__)
@@ -58,9 +59,11 @@ class LargeFileStorage:
         self.current = Path(storage).expanduser().absolute()
 
         # set the folder to download the data file into
-        os.environ['XDG_CACHE_HOME'] = '/' # needed because astropy will put things in home otherwise
-        # we set up XDG_CACHE_HOME as root to avoid mulitple instances of lfs running and clashing in environ variable
-        self.PKGNAME = storage
+        # need to set environment variable because astropy will put things into home otherwise
+        os.environ['XDG_CACHE_HOME'] = str(Path(storage).absolute())
+        # if someone is using astropy along with pysme, it might mess with their astropy file storage
+        # not threadsafe, but multiprocessing safe, because threads shares environment variables
+        self.PKGNAME = ''
         
         if not os.path.exists(storage):
             print('folder to store data file does not exist, creating')
