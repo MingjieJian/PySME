@@ -416,7 +416,7 @@ class SME_DLL:
         if key is not None:
             kwargs["key"] = key
         if species is not None:
-            kwargs["species "] = species
+            kwargs["species"] = species
         return _smelib.GetOpacity(switch, **kwargs)
 
     def Ionization(self, ion=0):
