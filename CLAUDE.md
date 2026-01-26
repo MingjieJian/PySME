@@ -23,16 +23,37 @@ The native code is compiled at build time (not runtime), producing platform-spec
 
 ### smelib Submodule
 
-The `smelib/` directory is a git submodule pointing to `MingjieJian/SMElib`. It contains:
-- Fortran/C++ source code for spectral synthesis (`smelib/src/`)
-- Data files needed at runtime (`smelib/src/data/`)
-- Its own test suite (separate from PySME's tests)
+The `smelib/` directory is a git submodule pointing to `ivh/SMElib` (forked from `MingjieJian/SMElib`, which is the active upstream). The original repo `AWehrhahn/SMElib` is abandoned.
 
-PySME's CMakeLists.txt compiles the smelib sources into:
+PySME's CMakeLists.txt compiles these smelib sources:
+- `smelib/src/sme/sme_synth_faster.cpp` - main C++ synthesis code
+- `smelib/src/sme/*.f`, `smelib/src/eos/*.f` - Fortran routines
+- `smelib/pymodule/_smelib.cpp` - Python extension wrapper
+- `smelib/src/data/` - runtime data files
+
+Into:
 - `libsme.so/.dylib/.dll` - shared library with Fortran routines
-- `_smelib` - Python extension module (C++ wrapper)
+- `_smelib` - Python extension module
 
-The submodule's tests are independent; PySME's `test/` directory tests the Python interface.
+#### smelib cleanup
+
+The fork has been cleaned of files not needed by PySME:
+- Removed: CI configs (`.github/`, `.travis.yml`, `travis/`), test suite, debug scripts, backup files
+- Kept: autotools build system (`bootstrap`, `configure.ac`, `Makefile.am`, etc.) and `pymodule/smelib.py` for standalone/IDL use
+
+#### Build system history
+
+**Old approach** (before current build system):
+1. `pip install pysme-astro` installed pure Python
+2. At runtime, PySME detected platform and downloaded pre-built `libsme` binaries from SMElib GitHub releases
+3. Those releases were built by SMElib's own CI workflows (now removed from our fork)
+
+**Current approach**:
+1. `pip install pysme-astro` installs a wheel with compiled `libsme` included
+2. Compilation happens at wheel build time via PySME's CI (CMake/scikit-build-core)
+3. No runtime downloads needed
+
+The standalone SMElib releases (from MingjieJian/SMElib) are still produced for IDL users who use SME without Python.
 
 ## CI/CD
 
