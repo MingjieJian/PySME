@@ -793,7 +793,9 @@ static PyObject *smelib_GetOpacity(PyObject *self, PyObject *args, PyObject *kwd
     static const char *keywords[] = {"flag", "species", "key", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|ss", const_cast<char **>(keywords),
                                      &choice, &species, &key))
+    {
         return NULL;
+    }
 
     if (strcmp(choice, "COPSTD") == 0)
         number = -3;
@@ -881,6 +883,48 @@ static PyObject *smelib_GetOpacity(PyObject *self, PyObject *args, PyObject *kwd
     args_c[2] = PyArray_DATA(arr);
 
     result = GetOpacity(n, args_c);
+
+    if (result != NULL && result[0] != OK_response)
+    {
+        Py_DECREF(arr);
+        PyErr_SetString(PyExc_RuntimeError, result);
+        return NULL;
+    }
+    return (PyObject *)arr;
+}
+
+static char smelib_GetFraction_docstring[] = "Returns fraction/partition function for a species";
+static PyObject *smelib_GetFraction(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    int n = 4;
+    void *args_c[4];
+    const char *result = NULL;
+    char *species = NULL;
+    short mode = 2;
+    short length;
+    IDL_STRING species_idl;
+
+    PyArrayObject *arr;
+
+    static const char *keywords[] = {"species", "mode", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|h", const_cast<char **>(keywords),
+                                     &species, &mode))
+        return NULL;
+
+    species_idl.slen = strlen(species);
+    species_idl.s = species;
+    species_idl.stype = 0;
+
+    length = GetNRHOX();
+    npy_intp dims[] = {length};
+    arr = (PyArrayObject *)PyArray_SimpleNew(1, dims, NPY_DOUBLE);
+
+    args_c[0] = &species_idl;
+    args_c[1] = &mode;
+    args_c[2] = &length;
+    args_c[3] = PyArray_DATA(arr);
+
+    result = GetFraction(n, args_c);
 
     if (result != NULL && result[0] != OK_response)
     {
@@ -1379,6 +1423,7 @@ static PyMethodDef module_methods[] = {
     {"InputAbund", smelib_InputAbund, METH_VARARGS, smelib_InputAbund_docstring},
     {"Opacity", smelib_Opacity, METH_NOARGS, smelib_Opacity_docstring},
     {"GetOpacity", (PyCFunction)(void (*)(void))smelib_GetOpacity, METH_VARARGS | METH_KEYWORDS, smelib_GetOpacity_docstring},
+    {"GetFraction", (PyCFunction)(void (*)(void))smelib_GetFraction, METH_VARARGS | METH_KEYWORDS, smelib_GetFraction_docstring},
     {"Ionization", smelib_Ionization, METH_VARARGS, smelib_Ionization_docstring},
     {"GetDensity", smelib_GetDensity, METH_NOARGS, smelib_GetDensity_docstring},
     {"GetNatom", smelib_GetNatom, METH_NOARGS, smelib_GetNatom_docstring},
