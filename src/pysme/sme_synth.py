@@ -2,6 +2,7 @@
 """ Wrapper for SME C library """
 
 import logging
+import os
 from ctypes import cdll
 from os.path import abspath, dirname, join, normpath
 from posixpath import expanduser
