@@ -99,12 +99,12 @@ uv run python -c "from pysme.sme import SME_Structure"  # Quick import test
 
 ## Local Development Setup
 
-After cloning (with `--recurse-submodules`), create symlinks for editable installs to find data and library files:
+After cloning, initialize submodules and build:
 
 ```bash
-cd src/pysme/smelib
-ln -sf ../../../smelib/src/data data
-ln -sf ../../../build lib
+git submodule update --init --recursive
+uv sync
+uv build   # or: uv run python -c "from pysme.sme import SME_Structure"
 ```
 
-These symlinks are in `.gitignore` and only needed for local development. The wheel build process copies files to the correct locations automatically.
+The code automatically finds data files and libraries in both installed locations and source/build directories, so no manual symlinks are needed for development.

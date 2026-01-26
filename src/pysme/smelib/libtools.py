@@ -6,7 +6,11 @@ Utilities for locating the SME C/Fortran library and data files.
 import ctypes as ct
 import os
 import platform
-from os.path import dirname, join
+from os.path import dirname, join, exists
+
+# Project root (for development fallbacks)
+_PKG_DIR = dirname(__file__)
+_PROJECT_ROOT = dirname(dirname(dirname(_PKG_DIR)))
 
 
 def get_lib_name():
@@ -39,12 +43,22 @@ def get_lib_directory():
 
 
 def get_full_libfile():
-    """Get the full path to the sme C library"""
-    localdir = dirname(__file__)
-    libfile = get_lib_name()
+    """
+    Get the full path to the sme C library.
+    Checks installed location first, falls back to build dir for development.
+    """
+    libname = get_lib_name()
     dirpath = get_lib_directory()
-    libfile = join(localdir, dirpath, libfile)
-    return libfile
+    # Installed location
+    libfile = join(_PKG_DIR, dirpath, libname)
+    if exists(libfile):
+        return libfile
+    # Development fallback: build directory
+    libfile = join(_PROJECT_ROOT, "build", libname)
+    if exists(libfile):
+        return libfile
+    # Return default (will fail with clear error)
+    return join(_PKG_DIR, dirpath, libname)
 
 
 def load_library(libfile=None):
@@ -76,8 +90,16 @@ def load_library(libfile=None):
 
 def get_full_datadir():
     """
-    Get the filepath to the datafiles of the SME library
+    Get the filepath to the datafiles of the SME library.
+    Checks installed location first, falls back to source for development.
     """
-    localdir = dirname(__file__)
-    datadir = join(localdir, "data/")
-    return datadir
+    # Installed location
+    datadir = join(_PKG_DIR, "data")
+    if exists(datadir):
+        return datadir + os.sep
+    # Development fallback: submodule location
+    datadir = join(_PROJECT_ROOT, "smelib", "src", "data")
+    if exists(datadir):
+        return datadir + os.sep
+    # Return default (will fail with clear error)
+    return join(_PKG_DIR, "data") + os.sep

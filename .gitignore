@@ -164,5 +164,3 @@ paper/*.html
 local/
 atmo_ml/
 
-src/pysme/libsrc/pysme/smelib/data
-src/pysme/smelib/lib
