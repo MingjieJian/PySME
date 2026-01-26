@@ -71,7 +71,8 @@ test-requires = "pytest"
 test-command = "python -c \"from pysme.smelib import _smelib; print(_smelib.LibraryVersion())\""
 
 [tool.cibuildwheel.linux]
-before-all = "yum install -y gcc-gfortran || apk add gfortran"
+manylinux-x86_64-image = "manylinux_2_28"
+before-all = "dnf install -y gcc-gfortran || apk add gfortran"
 archs = ["x86_64"]
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 
