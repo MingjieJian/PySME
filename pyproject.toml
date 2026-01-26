@@ -50,7 +50,7 @@ classifiers = [
 "Documentation" = "https://pysme-astro.readthedocs.io/en/latest/"
 "Source Code"  = "https://github.com/MingjieJian/SME/"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "pytest>=7.2,<9",
   "sphinx>=5.3,<9",
