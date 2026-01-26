@@ -21,6 +21,19 @@ Uses **scikit-build-core** with CMake to compile the native extension:
 
 The native code is compiled at build time (not runtime), producing platform-specific wheels.
 
+### smelib Submodule
+
+The `smelib/` directory is a git submodule pointing to `MingjieJian/SMElib`. It contains:
+- Fortran/C++ source code for spectral synthesis (`smelib/src/`)
+- Data files needed at runtime (`smelib/src/data/`)
+- Its own test suite (separate from PySME's tests)
+
+PySME's CMakeLists.txt compiles the smelib sources into:
+- `libsme.so/.dylib/.dll` - shared library with Fortran routines
+- `_smelib` - Python extension module (C++ wrapper)
+
+The submodule's tests are independent; PySME's `test/` directory tests the Python interface.
+
 ## CI/CD
 
 GitHub Actions workflow (`.github/workflows/python-app.yml`):
@@ -83,3 +96,15 @@ Build: scikit-build-core, numpy, CMake, Fortran compiler (gfortran)
 uv run pytest                           # Run all tests
 uv run python -c "from pysme.sme import SME_Structure"  # Quick import test
 ```
+
+## Local Development Setup
+
+After cloning (with `--recurse-submodules`), create symlinks for editable installs to find data and library files:
+
+```bash
+cd src/pysme/smelib
+ln -sf ../../../smelib/src/data data
+ln -sf ../../../build lib
+```
+
+These symlinks are in `.gitignore` and only needed for local development. The wheel build process copies files to the correct locations automatically.
