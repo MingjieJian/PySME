@@ -61,7 +61,7 @@ dev = [
 
 [tool.scikit-build]
 cmake.build-type = "Release"
-sdist.include = ["smelib/*", "cmake/*", "src/pysme/*.json", "src/pysme/*.gz"]
+sdist.include = ["smelib/src/*", "smelib/pymodule/*", "cmake/*", "src/pysme/*.json", "src/pysme/*.gz"]
 wheel.packages = ["src/pysme"]
 
 [tool.cibuildwheel]
