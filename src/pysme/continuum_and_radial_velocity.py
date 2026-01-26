@@ -524,6 +524,13 @@ class ContinuumNormalizationMCMC(ContinuumNormalizationAbstract):
         if sme.vrad_flag == "whole":
             vrad = np.tile(vrad, [nseg])
 
+        # Squeeze single-segment results to match caller expectations
+        if nseg == 1:
+            vrad = vrad[0]
+            vrad_unc = vrad_unc[0]
+            cscale = cscale[0]
+            cscale_unc = cscale_unc[0]
+
         return vrad, vrad_unc, cscale, cscale_unc
 
 
