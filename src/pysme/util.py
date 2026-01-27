@@ -436,14 +436,112 @@ def parse_args():
     return args.sme, args.vald, args.fitparameters
 
 config = Config()
-H_lineprof = pd.read_csv(os.path.expanduser(f"{config['data.hlineprof']}/lineprof.dat"), sep=' +', names=['Teff', 'logg', 'Fe_H', 'nu', 'wl', 'wlair', 'mu', 'wmu', 'Ic', 'I'], engine='python')
-H_lineprof['wl'] *= 10
-H_lineprof['wl'] = vac2air(H_lineprof['wl'])
 
 boundary_vertices = [
     (4000, 1.5), (4500, 1.5), (7000, 4.5), (7000, 5.0),
     (4500, 5.0), (4500, 2.5), (4000, 2.5), (4000, 1.5)
 ]
+
+
+class _HLineInterpolators:
+    """Lazy loader for H-line 3D NLTE interpolators."""
+
+    def __init__(self):
+        self._initialized = False
+        self._H_lineprof = None
+        self._lambda_H_3DNLTE = None
+        self._scalar = None
+        self._rbf_Halpha = None
+        self._rbf_Hbeta = None
+        self._rbf_Hgamma = None
+
+    def _initialize(self):
+        if self._initialized:
+            return
+
+        H_lineprof = pd.read_csv(
+            os.path.expanduser(f"{config['data.hlineprof']}/lineprof.dat"),
+            sep=' +',
+            names=['Teff', 'logg', 'Fe_H', 'nu', 'wl', 'wlair', 'mu', 'wmu', 'Ic', 'I'],
+            engine='python'
+        )
+        H_lineprof['wl'] *= 10
+        H_lineprof['wl'] = vac2air(H_lineprof['wl'])
+        self._H_lineprof = H_lineprof
+
+        unique_grid = H_lineprof[["Teff", "logg", "Fe_H", "mu"]].drop_duplicates().reset_index(drop=True)
+
+        indices_H_gamma = (H_lineprof['wl'] < 4500)
+        indices_H_beta = (H_lineprof['wl'] > 4500) & (H_lineprof['wl'] < 5500)
+        indices_H_alpha = (H_lineprof['wl'] > 5500)
+
+        H_alpha_Ir = []
+        H_beta_Ir = []
+        H_gamma_Ir = []
+        for i in unique_grid.index:
+            indices = np.isclose(H_lineprof['Teff'], unique_grid.loc[i, 'Teff'])
+            indices &= np.isclose(H_lineprof['logg'], unique_grid.loc[i, 'logg'])
+            indices &= np.isclose(H_lineprof['Fe_H'], unique_grid.loc[i, 'Fe_H'])
+            indices &= np.isclose(H_lineprof['mu'], unique_grid.loc[i, 'mu'])
+            H_alpha_spectrum = H_lineprof[indices & indices_H_alpha]
+            H_beta_spectrum = H_lineprof[indices & indices_H_beta]
+            H_gamma_spectrum = H_lineprof[indices & indices_H_gamma]
+            if i == 0:
+                lambda_H_alpha = H_alpha_spectrum['wl'].values
+                lambda_H_beta = H_beta_spectrum['wl'].values
+                lambda_H_gamma = H_gamma_spectrum['wl'].values
+            H_alpha_Ir.append(H_alpha_spectrum['I'].values / H_alpha_spectrum['Ic'].values)
+            H_beta_Ir.append(H_beta_spectrum['I'].values / H_beta_spectrum['Ic'].values)
+            H_gamma_Ir.append(H_gamma_spectrum['I'].values / H_gamma_spectrum['Ic'].values)
+
+        H_alpha_Ir = np.array(H_alpha_Ir)
+        H_beta_Ir = np.array(H_beta_Ir)
+        H_gamma_Ir = np.array(H_gamma_Ir)
+
+        self._lambda_H_3DNLTE = np.concatenate([lambda_H_gamma, lambda_H_beta, lambda_H_alpha])
+
+        self._scalar = Scalar()
+        self._scalar.fit(unique_grid)
+        X = self._scalar.transform(unique_grid).values
+
+        self._rbf_Halpha = RBFInterpolator(X, H_alpha_Ir, neighbors=50, kernel="cubic")
+        self._rbf_Hbeta = RBFInterpolator(X, np.log10(np.clip(H_beta_Ir, 1e-12, None)), neighbors=None, kernel="cubic")
+        self._rbf_Hgamma = RBFInterpolator(X, np.log10(np.clip(H_gamma_Ir, 1e-12, None)), neighbors=None, kernel="cubic")
+
+        self._initialized = True
+
+    @property
+    def H_lineprof(self):
+        self._initialize()
+        return self._H_lineprof
+
+    @property
+    def lambda_H_3DNLTE(self):
+        self._initialize()
+        return self._lambda_H_3DNLTE
+
+    @property
+    def scalar(self):
+        self._initialize()
+        return self._scalar
+
+    @property
+    def rbf_Halpha(self):
+        self._initialize()
+        return self._rbf_Halpha
+
+    @property
+    def rbf_Hbeta(self):
+        self._initialize()
+        return self._rbf_Hbeta
+
+    @property
+    def rbf_Hgamma(self):
+        self._initialize()
+        return self._rbf_Hgamma
+
+
+_hline_interp = _HLineInterpolators()
 
 class Scalar:
     """Scalar class used to scale data. Can create a scalar, scale input data, save and load previous scalars.
@@ -569,57 +667,6 @@ class Scalar:
         else:
             self.mean, self.std = np.load(name)
 
-_unique_grid = (
-    H_lineprof[["Teff", "logg", "Fe_H", "mu"]].drop_duplicates().reset_index(drop=True)
-)
-
-_indices_H_gamma = (H_lineprof['wl'] < 4500)
-_indices_H_beta = (H_lineprof['wl'] > 4500) & (H_lineprof['wl'] < 5500)
-_indices_H_alpha = (H_lineprof['wl'] > 5500)
-
-_H_alpha_Ir = []
-_H_beta_Ir = []
-_H_gamma_Ir = []
-for i in _unique_grid.index:
-    _indices = np.isclose(H_lineprof['Teff'], _unique_grid.loc[i, 'Teff']) 
-    _indices &= np.isclose(H_lineprof['logg'], _unique_grid.loc[i, 'logg']) 
-    _indices &= np.isclose(H_lineprof['Fe_H'], _unique_grid.loc[i, 'Fe_H']) 
-    _indices &= np.isclose(H_lineprof['mu'], _unique_grid.loc[i, 'mu'])
-    _H_alpha_spectrum = H_lineprof[_indices & _indices_H_alpha]
-    _H_beta_spectrum = H_lineprof[_indices & _indices_H_beta]
-    _H_gamma_spectrum = H_lineprof[_indices & _indices_H_gamma]
-    if i == 0:
-        _lambda_H_alpha = _H_alpha_spectrum['wl'].values
-        _lambda_H_beta = _H_beta_spectrum['wl'].values
-        _lambda_H_gamma = _H_gamma_spectrum['wl'].values
-    _H_alpha_Ir.append(_H_alpha_spectrum['I'].values/_H_alpha_spectrum['Ic'].values)
-    _H_beta_Ir.append(_H_beta_spectrum['I'].values/_H_beta_spectrum['Ic'].values)
-    _H_gamma_Ir.append(_H_gamma_spectrum['I'].values/_H_gamma_spectrum['Ic'].values)
-
-_H_alpha_Ir = np.array(_H_alpha_Ir)
-_H_beta_Ir = np.array(_H_beta_Ir)
-_H_gamma_Ir = np.array(_H_gamma_Ir)
-
-lambda_H_3DNLTE = np.concatenate([_lambda_H_gamma, _lambda_H_beta, _lambda_H_alpha])
-
-_scalar = Scalar()
-_scalar.fit(_unique_grid)
-_X = _scalar.transform(_unique_grid).values
-rbf_Halpha = RBFInterpolator(
-            _X, _H_alpha_Ir,
-            neighbors=50,
-            kernel="cubic"
-        )
-rbf_Hbeta = RBFInterpolator(
-            _X, np.log10(np.clip(_H_beta_Ir, 1e-12, None)),
-            neighbors=None,
-            kernel="cubic"
-        )
-rbf_Hgamma = RBFInterpolator(
-            _X, np.log10(np.clip(_H_gamma_Ir, 1e-12, None)),
-            neighbors=None,
-            kernel="cubic"
-        )
 
 # def interpolate_H_spectrum(
 #     df: pd.DataFrame,
@@ -704,7 +751,12 @@ rbf_Hgamma = RBFInterpolator(
 #     return pd.DataFrame(result, columns=['mu', 'wl', 'wmu', 'Ic_interp', 'I_interp']), in_boundary
 
 
-def interpolate_3DNLTEH_spectrum_RBF(teff, logg, monh, mu, boundary_vertices):        
+def get_lambda_H_3DNLTE():
+    """Get the wavelength grid for 3D NLTE H-line interpolation."""
+    return _hline_interp.lambda_H_3DNLTE
+
+
+def interpolate_3DNLTEH_spectrum_RBF(teff, logg, monh, mu, boundary_vertices):
     """
     Interpolate the H line profile at the given parameters.
     Parameters
@@ -723,9 +775,13 @@ def interpolate_3DNLTEH_spectrum_RBF(teff, logg, monh, mu, boundary_vertices):
     polygon = Path(boundary_vertices)
     in_boundary = polygon.contains_point(point_star_2d)
 
-    int_3dnlte_H_mu = np.concatenate([10**rbf_Hgamma(_scalar.transform([[teff, logg, monh, mu]]))[0],
-                                    10**rbf_Hbeta(_scalar.transform([[teff, logg, monh, mu]]))[0],
-                                    rbf_Halpha(_scalar.transform([[teff, logg, monh, mu]]))[0]])
+    scalar = _hline_interp.scalar
+    coords = scalar.transform([[teff, logg, monh, mu]])
+    int_3dnlte_H_mu = np.concatenate([
+        10**_hline_interp.rbf_Hgamma(coords)[0],
+        10**_hline_interp.rbf_Hbeta(coords)[0],
+        _hline_interp.rbf_Halpha(coords)[0]
+    ])
     return int_3dnlte_H_mu, in_boundary
 
 def load_cdr_to_linelist(sme, filepath):
