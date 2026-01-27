@@ -946,7 +946,7 @@ class Synthesizer:
 
         # Insert the new 3DNLTE correction
         if sme.tdnlte_H:
-            interpolator = interp1d(util.lambda_H_3DNLTE, sme.tdnlte_H_correction, kind="linear", fill_value=1, bounds_error=False, assume_sorted=True)
+            interpolator = interp1d(util.get_lambda_H_3DNLTE(), sme.tdnlte_H_correction, kind="linear", fill_value=1, bounds_error=False, assume_sorted=True)
             correction_3dnlte_H_interp = interpolator(wint)
 
             sint *= correction_3dnlte_H_interp
@@ -1520,7 +1520,7 @@ class Synthesizer:
 
         int_3dnlte_H = []
         interpolator = interp1d(sme_H_only_res[0][0], sme_H_only_res[1][0], kind="linear", fill_value=1, bounds_error=False, assume_sorted=True)
-        int_1d_H = interpolator(util.lambda_H_3DNLTE)
+        int_1d_H = interpolator(util.get_lambda_H_3DNLTE())
         for mu in sme_H_only.mu:
             int_3dnlte_H_mu, in_boundary = interpolate_3DNLTEH_spectrum_RBF(sme_H_only.teff, sme_H_only.logg, sme_H_only.monh, mu, boundary_vertices)
             int_3dnlte_H.append(int_3dnlte_H_mu)

@@ -164,4 +164,7 @@ paper/*.html
 local/
 atmo_ml/
 
-src/pysme/lib
+# Frontend build artifacts (webgui branch)
+src/pysme/gui/frontend/node_modules/
+src/pysme/gui/frontend/dist/
+docs/websme-reference/

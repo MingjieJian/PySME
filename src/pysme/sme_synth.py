@@ -2,38 +2,18 @@
 """ Wrapper for SME C library """
 
 import logging
-import os, sys
+import os
 from ctypes import cdll
 from os.path import abspath, dirname, join, normpath
 from posixpath import expanduser
-from .smelib import libtools
 import numpy as np
 
-from .smelib.libtools import get_full_datadir, get_full_libfile, _parse_needed_arch_from_error, download_smelib
+from .smelib.libtools import get_full_datadir, get_full_libfile
+from .smelib import _smelib
 
 logger = logging.getLogger(__name__)
 
-# Load the library
-# This ensures that we can find the library when we load _smelib
-libfile = get_full_libfile()
-
-try:
-    cdll.LoadLibrary(libfile)
-except OSError as e:
-    msg = str(e)
-    # 仅在 macOS 且架构不匹配时尝试自愈
-    if sys.platform == "darwin" and ("incompatible architecture" in msg or "mach-o file" in msg):
-        need = _parse_needed_arch_from_error(msg)
-        print("Detected arch mismatch; error says need:", need or "(unknown)")
-        # 如果错误里没写 need，就按当前解释器架构
-        if need is not None:
-            download_smelib(force_arch=need)
-            libtools.compile_interface()
-            cdll.LoadLibrary(libfile)
-
-from .smelib import _smelib
-
-CURRENT_LIB = libfile
+CURRENT_LIB = get_full_libfile()
 
 
 def reload_lib(libfile):

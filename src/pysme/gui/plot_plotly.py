@@ -25,6 +25,8 @@ try:
 except (AttributeError, ImportError, ModuleNotFoundError):
     in_notebook = False
 
+FigureClass = go.FigureWidget if in_notebook else go.Figure
+
 logger = logging.getLogger(__name__)
 clight = speed_of_light * 1e-3
 fmt = PlotColors()
@@ -43,7 +45,7 @@ class FitPlot:
     """Plot the sme solve fit, as iterations pass along"""
 
     def __init__(self, wave, spec):
-        self.fig = go.FigureWidget()
+        self.fig = FigureClass()
         self.fig.layout["xaxis"]["title"] = "Wavelength [Å]"
         self.fig.layout["yaxis"]["title"] = "Intensity"
 
@@ -145,13 +147,13 @@ class FinalPlot:
             "legend": {"traceorder": "reversed"},
         }
         if in_notebook:
-            self.fig = go.FigureWidget(data=data, layout=layout)
+            self.fig = FigureClass(data=data, layout=layout)
 
             # add selection callback
             self.fig.data[0].on_selection(self.selection_fn)
         else:
             data = [go.Scattergl(d) for d in data]
-            self.fig = go.FigureWidget(data=data, layout=layout)
+            self.fig = FigureClass(data=data, layout=layout)
 
         # Add button to save figure
         if in_notebook:

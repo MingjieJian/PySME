@@ -107,8 +107,10 @@ def load(fname, sme):
     """
     try:
         ff = FlexFile.read(fname)
-        sme = from_flex(ff, sme)
-        ff.close()
+        try:
+            sme = from_flex(ff, sme)
+        finally:
+            ff.close()
         return sme
     except Exception as ex:
         logger.error(ex)

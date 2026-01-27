@@ -151,6 +151,8 @@ def gaussbroad(w, s, hwhm):
         Oct-18 AW
             Python version
     """
+    # Ensure hwhm is a scalar
+    hwhm = np.atleast_1d(hwhm).flat[0]
 
     # Warn user if hwhm is negative.
     if hwhm < 0:
