@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "pysme-astro"
 requires-python = ">=3.9"
-version = "0.5.0a3"
+version = "0.5.0a4"
 description = "Spectroscopy Made Easy"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
