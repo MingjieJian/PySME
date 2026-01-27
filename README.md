@@ -1,7 +1,3 @@
-![Python application](https://github.com/ivh/PySME/workflows/Python%20application/badge.svg)
-[![Documentation Status](https://readthedocs.org/projects/pysme-astro/badge/?version=latest)](https://pysme-astro.readthedocs.io/en/latest/?badge=latest)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5547527.svg)](https://doi.org/10.5281/zenodo.5547527)
-
 # PySME
 
 Spectroscopy Made Easy (SME) is a software tool that fits an observed
@@ -17,14 +13,50 @@ adopting an object oriented paradigm and continuous integration practices
 
 # Installation
 
-Install from PyPI:
+## From PyPI (upstream)
+
+The `pysme-astro` package on PyPI is published from the upstream repository
+[MingjieJian/SME](https://github.com/MingjieJian/SME), not this fork:
+
 ```bash
 pip install pysme-astro
 ```
 
-Pre-built wheels are available for Linux (x86_64), macOS (arm64), and Windows (AMD64).
+## From this repository
 
-See the [documentation](https://pysme-astro.readthedocs.io/en/latest/usage/installation.html) for more details.
+Install a wheel from [GitHub Releases](https://github.com/ivh/PySME/releases):
+
+```bash
+pip install https://github.com/ivh/PySME/releases/download/vX.Y.Z/pysme_astro-X.Y.Z-cpXXX-cpXXX-PLATFORM.whl
+```
+
+Replace version and platform as needed. Pre-built wheels are available for Linux (x86_64), macOS (arm64), and Windows (AMD64).
+
+## Build from source
+
+Clone with submodules and build:
+
+```bash
+git clone --recurse-submodules https://github.com/ivh/PySME.git
+cd PySME
+uv sync
+uv build
+```
+
+Then use `uv run` to run scripts or tests:
+
+```bash
+uv run pytest
+uv run python your_script.py
+```
+
+After editing C/Fortran code in `smelib/`, rebuild with `uv build` or run `cmake --build .` in the `build/` directory.
+
+See [CLAUDE.md](CLAUDE.md) for more development details.
+
+# Documentation
+
+See the [documentation](https://pysme-astro.readthedocs.io/en/latest/usage/installation.html) for usage details.
 
 # Poster
 
@@ -33,22 +65,3 @@ A poster about PySME can be found here: [Poster](http://sme.astro.uu.se/poster.h
 # GUI
 
 A GUI for PySME is available in its own repository [PySME-GUI](https://github.com/MingjieJian/PySME-GUI).
-
-# Development
-
-Clone with submodules and build:
-```bash
-git clone --recurse-submodules https://github.com/ivh/PySME.git
-cd PySME
-uv sync
-uv build
-```
-
-Run tests:
-```bash
-uv run pytest
-```
-
-After editing C/Fortran code in `smelib/`, rebuild with `uv build` or run `cmake --build .` in the `build/` directory.
-
-See [CLAUDE.md](CLAUDE.md) for more development details.
