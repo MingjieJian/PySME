@@ -740,10 +740,10 @@ class SME_Solver:
         # Do the heavy lifting
         if self.nparam > 0:
             self.progressbar = tqdm(
-                desc="Iteration", total=0, disable=~show_progress_bars
+                desc="Iteration", total=0, disable=not show_progress_bars
             )
             self.progressbar_jacobian = tqdm(
-                desc="Jacobian", total=len(p0), disable=~show_progress_bars
+                desc="Jacobian", total=len(p0), disable=not show_progress_bars
             )
             with print_to_log():
                 res = least_squares(
