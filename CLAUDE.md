@@ -3,9 +3,8 @@
 ## Quick Start
 
 ```bash
-uv sync                    # Install dependencies (includes dev group)
+uv sync                    # Install in dev mode (compiles native code)
 uv run pytest              # Run tests
-uv build                   # Build wheel locally
 ```
 
 ## Project Overview
@@ -81,12 +80,13 @@ GitHub Actions workflow (`.github/workflows/python-app.yml`):
    version = "X.Y.ZrcN"   # release candidate
    ```
 
-2. Commit and tag:
+2. Sync lockfile and commit:
    ```bash
-   git add pyproject.toml
+   uv sync
+   git add pyproject.toml uv.lock
    git commit -m "Release vX.Y.Z"
    git tag vX.Y.Z
-   git push && git push --tags
+   git push && git push origin vX.Y.Z
    ```
 
 3. GitHub Actions builds wheels and publishes to PyPI automatically.
@@ -120,12 +120,11 @@ uv run python -c "from pysme.sme import SME_Structure"  # Quick import test
 
 ## Local Development Setup
 
-After cloning, initialize submodules and build:
+After cloning, initialize submodules and install:
 
 ```bash
 git submodule update --init --recursive
 uv sync
-uv build   # or: uv run python -c "from pysme.sme import SME_Structure"
 ```
 
-The code automatically finds data files and libraries in both installed locations and source/build directories, so no manual symlinks are needed for development.
+This compiles the native code and installs in editable mode. After editing C/Fortran code in `smelib/`, re-run `uv sync` to rebuild.

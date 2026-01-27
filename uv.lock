@@ -2042,7 +2042,7 @@ wheels = [
 
 [[package]]
 name = "pysme-astro"
-version = "0.5.0a3"
+version = "0.5.0a4"
 source = { editable = "." }
 dependencies = [
     { name = "astropy", version = "6.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },

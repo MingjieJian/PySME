@@ -34,13 +34,12 @@ Replace version and platform as needed. Pre-built wheels are available for Linux
 
 ## Build from source
 
-Clone with submodules and build:
+Clone with submodules and install:
 
 ```bash
 git clone --recurse-submodules https://github.com/ivh/PySME.git
 cd PySME
 uv sync
-uv build
 ```
 
 Then use `uv run` to run scripts or tests:
@@ -50,7 +49,7 @@ uv run pytest
 uv run python your_script.py
 ```
 
-After editing C/Fortran code in `smelib/`, rebuild with `uv build` or run `cmake --build .` in the `build/` directory.
+After editing C/Fortran code in `smelib/`, re-run `uv sync` to rebuild.
 
 See [CLAUDE.md](CLAUDE.md) for more development details.
 
