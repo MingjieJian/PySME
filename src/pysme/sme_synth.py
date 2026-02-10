@@ -473,6 +473,21 @@ class SME_DLL:
         """
         return _smelib.GetNelec()
 
+    def GetFraction(self, species, mode=0):
+        """
+        Get species fraction/partition function/number density.
+
+        Parameters
+        ----------
+        species : str
+            Species name in SPLIST (e.g., 'Fe', 'Fe+', 'CO')
+        mode : int, optional
+            0: number density (FRACT * PF)
+            1: partition function
+            other: FRACT
+        """
+        return _smelib.GetFraction(species, mode=mode)
+
     def Transf(
         self,
         mu,
