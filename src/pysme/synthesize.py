@@ -606,7 +606,8 @@ class Synthesizer:
         cdr_create=False,
         keep_line_opacity=False,
         vbroad_expend_ratio=2,
-        contribution_function=False
+        contribution_function=False,
+        smelib_lineinfo_mode=0,
     ):
         """
         Calculate the synthetic spectrum based on the parameters passed in the SME structure
@@ -691,6 +692,7 @@ class Synthesizer:
             wave = [w for w in sme.wave]
 
         dll = self.get_dll(dll_id)
+        dll.SetLineInfoMode(int(smelib_lineinfo_mode))
 
         # Calculate the line central depth and line range if necessary
         if linelist_mode == 'auto':
@@ -702,17 +704,65 @@ class Synthesizer:
         # Input Model data to C library
         dll.SetLibraryPath()
         if passLineList:
+            linelist_for_smelib = sme.linelist
             if linelist_mode == 'auto':
                 line_indices = sme.linelist['wlcent'] < 0
                 v_broad = np.sqrt(sme.vmac**2 + sme.vsini**2 + (clight/sme.ipres)**2)
                 for i in range(sme.nseg):
                     line_indices |= (sme.linelist['line_range_e'] > sme.wran[i][0] * (1 - vbroad_expend_ratio*v_broad/clight)) & (sme.linelist['line_range_s'] < sme.wran[i][1] * (1 + vbroad_expend_ratio*v_broad/clight))
-                line_indices &= self.flag_strong_lines_by_bins(sme.linelist['wlcent'], sme.linelist['central_depth'])
+                line_indices &= self.flag_strong_lines_by_bins(
+                    sme.linelist['wlcent'],
+                    sme.linelist['central_depth'],
+                    threshold=sme.cdr_depth_thres,
+                )
                 sme.linelist._lines['use_indices'] = line_indices
-                line_ion_mask = dll.InputLineList(sme.linelist[line_indices])
-            else:
-                line_ion_mask = dll.InputLineList(sme.linelist)
+                linelist_for_smelib = sme.linelist[line_indices]
+            line_ion_mask = dll.InputLineList(linelist_for_smelib)
             sme.line_ion_mask = line_ion_mask
+
+            if smelib_lineinfo_mode in (1, 2):
+                cols = set(linelist_for_smelib._lines.columns)
+                required_cols = {"line_range_s", "line_range_e"}
+                missing_cols = sorted(required_cols - cols)
+
+                # Build strong mask from existing column or central depth.
+                if "strong" in cols:
+                    strong_all = np.asarray(linelist_for_smelib["strong"], dtype=np.uint8)
+                elif "central_depth" in cols:
+                    strong_all = np.asarray(
+                        self.flag_strong_lines_by_bins(
+                            linelist_for_smelib["wlcent"],
+                            linelist_for_smelib["central_depth"],
+                            threshold=sme.cdr_depth_thres,
+                        ),
+                        dtype=np.uint8,
+                    )
+                else:
+                    strong_all = None
+
+                if strong_all is None:
+                    missing_cols.append("strong/central_depth")
+
+                if missing_cols:
+                    msg = (
+                        f"SMElib lineinfo mode={smelib_lineinfo_mode} requested but missing "
+                        f"precomputed columns: {', '.join(missing_cols)}"
+                    )
+                    if smelib_lineinfo_mode == 2:
+                        raise ValueError(msg)
+                    logger.warning("%s. Falling back to mode 0.", msg)
+                    dll.SetLineInfoMode(0)
+                else:
+                    keep_mask = ~np.asarray(line_ion_mask, dtype=bool)
+                    range_s = np.asarray(linelist_for_smelib["line_range_s"], dtype=np.float64)[keep_mask]
+                    range_e = np.asarray(linelist_for_smelib["line_range_e"], dtype=np.float64)[keep_mask]
+                    strong_mask = np.asarray(strong_all, dtype=np.uint8)[keep_mask]
+
+                    if "central_depth" in cols:
+                        depth = np.asarray(linelist_for_smelib["central_depth"], dtype=np.float64)[keep_mask]
+                        dll.InputLinePrecomputedInfo(range_s, range_e, strong_mask, depth)
+                    else:
+                        dll.InputLinePrecomputedInfo(range_s, range_e, strong_mask)
         if hasattr(updateLineList, "__len__") and len(updateLineList) > 0:
             # TODO Currently Updates the whole linelist, could be improved to only change affected lines
             dll.UpdateLineList(sme.atomic, sme.species, updateLineList)
