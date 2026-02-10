@@ -135,7 +135,7 @@ class SME_Solver:
             pass
 
     def _residuals(
-        self, param, sme, spec, uncs, mask, segments="all", isJacobian=False, linelist_mode='all', **_
+        self, param, sme, spec, uncs, mask, segments="all", isJacobian=False, linelist_mode='all', smelib_lineinfo_mode=0, **_
     ):
         """
         Calculates the synthetic spectrum with sme_func and
@@ -202,7 +202,8 @@ class SME_Solver:
                 passLineList=True,
                 updateLineList=self.update_linelist,
                 radial_velocity_mode=radial_velocity_mode,
-                linelist_mode=linelist_mode
+                linelist_mode=linelist_mode,
+                smelib_lineinfo_mode=smelib_lineinfo_mode,
             )
         except AtmosphereError as ae:
             # Something went wrong (left the grid? Don't go there)
@@ -257,6 +258,7 @@ class SME_Solver:
         step_sizes=None,
         method="2-point",
         linelist_mode='all',
+        smelib_lineinfo_mode=0,
         **_,
     ):
         """
@@ -283,7 +285,12 @@ class SME_Solver:
             abs_step=step_sizes,
             bounds=bounds,
             args=args,
-            kwargs={"isJacobian": True, "segments": segments, "linelist_mode": linelist_mode},
+            kwargs={
+                "isJacobian": True,
+                "segments": segments,
+                "linelist_mode": linelist_mode,
+                "smelib_lineinfo_mode": smelib_lineinfo_mode,
+            },
         )
 
         if not np.all(np.isfinite(g)):
@@ -613,7 +620,7 @@ class SME_Solver:
                 )
         return param_names
 
-    def solve(self, sme, param_names=None, segments="all", bounds=None, step_sizes=None, dynamic_param=None, linelist_mode='all'):
+    def solve(self, sme, param_names=None, segments="all", bounds=None, step_sizes=None, dynamic_param=None, linelist_mode='all', smelib_lineinfo_mode=0):
         """
         Find the least squares fit parameters to an observed spectrum
 
@@ -767,7 +774,8 @@ class SME_Solver:
                         "segments": segments,
                         "step_sizes": step_sizes,
                         "method": sme.leastsquares_jac,
-                        "linelist_mode": linelist_mode
+                        "linelist_mode": linelist_mode,
+                        "smelib_lineinfo_mode": smelib_lineinfo_mode,
                     },
                 )
                 # The jacobian is altered by the loss function
@@ -793,7 +801,12 @@ class SME_Solver:
             # We could try to reuse the already calculated synthetic spectrum (if it already exists)
             # However it is much lower resolution then the newly synthethized one (usually)
             # Therefore the radial velocity wont be as good as when redoing the whole thing
-            sme = self.synthesizer.synthesize_spectrum(sme, segments, linelist_mode=linelist_mode)
+            sme = self.synthesizer.synthesize_spectrum(
+                sme,
+                segments,
+                linelist_mode=linelist_mode,
+                smelib_lineinfo_mode=smelib_lineinfo_mode,
+            )
         else:
             raise ValueError("No fit parameters given")
 
