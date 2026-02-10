@@ -92,6 +92,7 @@ class SME_Solver:
         self.iteration = 0
         self.parameter_names = []
         self.update_linelist = False
+        self.derived_param = None
         self._latest_residual = None
         self._latest_jacobian = None
         self.restore = restore
@@ -178,20 +179,20 @@ class SME_Solver:
 
         # change parameters
         for name, value in zip(self.parameter_names, param):
-            if self.dynamic_param is not None:
-                if name in self.dynamic_param.keys():
-                    raise ValueError(f'fitting parameter {name} cannot be also in dynamic parameter.')
+            if self.derived_param is not None:
+                if name in self.derived_param.keys():
+                    raise ValueError(f"fitting parameter {name} cannot be also in derived parameter.")
             sme[name] = value
-        # change dynamic parameters
-        if self.dynamic_param is not None:
-            for name in self.dynamic_param.keys():
-                if 'abund' in name:
+        # change derived parameters
+        if self.derived_param is not None:
+            for name in self.derived_param.keys():
+                if "abund" in name:
                     abund_name = name.split()[1]
-                    sme.abund[abund_name] = self.dynamic_param[name](sme) - sme.monh
-                    print(f'Changing dynamic parameter {name} to {sme.abund[abund_name]:.2f}.')
+                    sme.abund[abund_name] = self.derived_param[name](sme) - sme.monh
+                    print(f"Changing derived parameter {name} to {sme.abund[abund_name]:.2f}.")
                 else:
-                    sme[name] = self.dynamic_param[name](sme)
-                    print(f'Changing dynamic parameter {name} to {sme[name]:.2f}.')
+                    sme[name] = self.derived_param[name](sme)
+                    print(f"Changing derived parameter {name} to {sme[name]:.2f}.")
         # run spectral synthesis
         try:
             result = self.synthesizer.synthesize_spectrum(
@@ -620,7 +621,18 @@ class SME_Solver:
                 )
         return param_names
 
-    def solve(self, sme, param_names=None, segments="all", bounds=None, step_sizes=None, dynamic_param=None, linelist_mode='all', smelib_lineinfo_mode=0):
+    def solve(
+        self,
+        sme,
+        param_names=None,
+        segments="all",
+        bounds=None,
+        step_sizes=None,
+        derived_param=None,
+        dynamic_param=None,
+        linelist_mode="all",
+        smelib_lineinfo_mode=0,
+    ):
         """
         Find the least squares fit parameters to an observed spectrum
 
@@ -644,7 +656,15 @@ class SME_Solver:
         assert "wave" in sme, "SME Structure has no wavelength"
         assert "spec" in sme, "SME Structure has no observation"
 
-        self.dynamic_param = dynamic_param
+        if derived_param is not None and dynamic_param is not None and derived_param is not dynamic_param:
+            raise ValueError("Specify only one of derived_param or dynamic_param, not both.")
+        if dynamic_param is not None:
+            warnings.warn(
+                "'dynamic_param' is deprecated and will be removed in a future release; use 'derived_param' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        self.derived_param = derived_param if derived_param is not None else dynamic_param
 
         if self.restore and self.filename is not None:
             fname = self.filename.rsplit(".", 1)[0]
@@ -817,7 +837,21 @@ class SME_Solver:
 
 
 def solve(
-    sme, param_names=None, segments="all", filename=None, restore=False, **kwargs
+    sme,
+    param_names=None,
+    segments="all",
+    filename=None,
+    restore=False,
+    derived_param=None,
+    dynamic_param=None,
+    **kwargs,
 ):
     solver = SME_Solver(filename=filename, restore=restore)
-    return solver.solve(sme, param_names, segments, **kwargs)
+    return solver.solve(
+        sme,
+        param_names,
+        segments,
+        derived_param=derived_param,
+        dynamic_param=dynamic_param,
+        **kwargs,
+    )
