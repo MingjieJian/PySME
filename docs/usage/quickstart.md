@@ -32,6 +32,7 @@ sme.linelist = vald
 ```
 * Wavelength grid or wavelength range
 ```py
+import numpy as np
 sme.wave = [np.arange(6436, 6440, 0.1), np.arange(6442, 6443, 0.1)]
 # Or
 sme.wran = [[6436, 6440], [6442, 6443]]
@@ -60,7 +61,7 @@ They can be inserted into the SME structure with:
 sme.wave = wave
 sme.spec = flux
 sme.uncs = uncertainties
-sme.mask = np.ones(len(Spectrum), dtype=int)
+sme.mask = np.ones(len(wave), dtype=int)
 ```
 
 - The wavelength is always given in Angstrom. 
@@ -72,7 +73,7 @@ sme.mask = np.ones(len(Spectrum), dtype=int)
 
 Then the `solve` function can be used to find the best fit solution:
 ```py
-from sme.solve import solve
+from pysme.solve import solve
 # for more details on the fitparameter option, see fitparameters
 fitparameters = ["teff", "logg", "monh", "abund Mg"]
 sme = solve(sme, fitparameters)
