@@ -14,8 +14,10 @@
 #
 import os
 import sys
+import importlib.util
 
-src_dir = os.path.abspath("..")
+docs_dir = os.path.abspath(os.path.dirname(__file__))
+src_dir = os.path.abspath(os.path.join(docs_dir, ".."))
 sys.path.insert(0, src_dir)
 sys.path.insert(0, src_dir + "/src")
 
@@ -26,10 +28,35 @@ project = "PySME"
 copyright = "2025, Jeff Valenti, Nikolai Piskunov, Mingjie Jian, Ansgar Wehrhahn"
 author = "Jeff Valenti, Nikolai Piskunov, Mingjie Jian, Ansgar Wehrhahn"
 
-# The short X.Y version
-version = ""
-# The full version, including alpha/beta/rc tags
-release = "0.6.20"
+def _resolve_release():
+    """Resolve docs version from versioneer without importing pysme package.
+
+    Importing ``pysme`` would trigger heavy runtime side effects in ``__init__``.
+    We therefore load ``src/pysme/_version.py`` directly.
+    """
+    version_file = os.path.join(src_dir, "src", "pysme", "_version.py")
+    try:
+        spec = importlib.util.spec_from_file_location("pysme_version", version_file)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"Could not load version spec from: {version_file}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.get_versions().get("version", "unknown")
+    except Exception:
+        # Fallbacks keep docs buildable even without full VCS metadata.
+        return (
+            os.environ.get("READTHEDOCS_GIT_IDENTIFIER")
+            or os.environ.get("READTHEDOCS_VERSION")
+            or "unknown"
+        )
+
+
+# The full version, including local build metadata (e.g. +g<sha>.dirty)
+release = _resolve_release()
+# The short X.Y version shown by Sphinx.
+short_release = release.split("+")[0]
+version_parts = short_release.split(".")
+version = ".".join(version_parts[:2]) if len(version_parts) >= 2 else short_release
 
 
 # -- General configuration ---------------------------------------------------
@@ -82,7 +109,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -118,6 +145,7 @@ html_theme_options = {
       "image_dark": "_static/pysme_logo-dark.png",
    }
 }
+html_css_files = ["custom.css"]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

@@ -19,7 +19,6 @@ Stellar parameters describe the star in general and are usually what we want to 
 - `vmac`: The macro-turbulence velocity in km s⁻¹. Describes turbulence on scales **larger** than the photon mean free path, also contributing to broadening.
 - `mu`: Limb-angle values ($\mu = \cos\theta$) at which the radiative-transfer calculation is performed. $\mu = 1$ corresponds to disk center, $0$ to the limb.
 
-
 ## Radial velocity and Continuum
 
 The radial velocity and continuum shift the continuum
@@ -43,17 +42,10 @@ PySME has many options to determine them.
     - each: Fit each wavelength segment individally
     - whole: Fit the whole spectrum at once
 
-- `normalize_by_continuum`:
-    A flag that determines, whether the synthetic flux should be normalized
-    by the continous intensities or not. As long as you have a normalized
-    observation this should be True, but if you have a flux calibrated
-    spectrum this should be set to False. Note that even if this is False,
-    you can still fit a continuum normally using cscale_flag.
 
-Spectra
--------
+## Spectra
 
-Spectra are given as a list of arrays[^#], where each array represents
+Spectra are given as a list of arrays[^iliffe], where each array represents
 one wavelength segment of the spectrum. If there is only one segment,
 the list will only have one element. For legacy reasons there is also
 an interface to the 'old' system and names (e.g. smod instead of synth)
@@ -85,8 +77,7 @@ from IDL SME. It is recommend however to use the new variables.
     adaptive grid.
 
 
-Abundance
----------
+## Abundance
 
 The individal abundances are stored in a seperate Abundance
 object, which shares the same metallicity as the overall structure.
@@ -94,13 +85,12 @@ For more detailed information see [](abundance).
 
 :abund: The abundance object
 
-Linelist
---------
+## Linelist
 
 The sme structure does contain the whole linelist in the linelist property.
 For legacy reasons, it also provides direct access to
 the 'species' and 'atomic' arrays. They refer directly to the linelist however.
-For more detailed information see :ref:`linelist`.
+For more detailed information see [](../fundamentals/linelist.md).
 
 :linelist: The linelist object
 :species: Names of the species of each spectral line
@@ -108,26 +98,23 @@ For more detailed information see :ref:`linelist`.
     Atomic linelist data with columns "atom_number", "ionization",
     "wlcent", "excit", "gflog", "gamrad", "gamqst", "gamvw"
 
-Atmosphere
-----------
+## Atmosphere
 
 Unlike the linelist the atmosphere is stored in an external file,
 that is only referenced by name in the structure.
-For more detailed information see :ref:`atmosphere`.
+For more detailed information see [](atmosphere).
 
 :atmo: The atmosphere object
 
-NLTE
-----
+## NLTE
 
 Unlike the linelist, but similar to the atmosphere, the NLTE
 parameters are stored in external tables, which are only referenced
-by name. For more detailed information see :ref:`nlte`.
+by name. For more detailed information see [](nlte).
 
 :nlte: The NLTE object
 
-Instrument Parameters
----------------------
+## Instrument Parameters
 
 PySME can also model instrumental broadening as part of the
 spectral synthesis. For this you need to specify the resolution
@@ -144,21 +131,19 @@ and the broadening method to use.
     The y points of the instrument profile.
     Only relevant if iptype is 'table'.
 
-Fitresults
-----------
+## Fitresults
 
 :fitparameters:
     The fitparameters used for the fitting.
-    See :ref:`fitparameters`.
-:fitresults: The fitresults object. See :ref:`fitresults`.
+    See [fitparameters](../concepts/fitparameters.md).
+:fitresults: The fitresults object. See [fitresults](../concepts/fitresults.md).
 
-System Information
-------------------
+## System Information
 
 The sme structure does contain information about the host system.
 E.g. which operating system was used. This is mostly for
 legacy reasons, and potential debugging information.
-For more information see :ref:`system_info`.
+For more information see [system_info](../concepts/system_info.md).
 
 :system_info: The system information object. It replaces the idlver object.
 
@@ -179,4 +164,4 @@ Other Parameters
     The date and time when this structure or the
     last synthetic spectrum was created
 
-[^#] They are called Illiffe vectors in the code, and they were that in IDL. But they are technically not Illiffe vectors anymore, but just lists of individal numpy arrays.
+[^iliffe]: They are called Illiffe vectors in the code, and they were that in IDL. But they are technically not Illiffe vectors anymore, but just lists of individal numpy arrays.

@@ -1,12 +1,10 @@
-.. _system_info:
+# System Info
 
-System Info
-===========
 
 The system info object is mostly for debugging, so you probably
-dont need to worry about it.
+don't need to worry about it.
 
-Still here are the fields
+Still here are the fields:
 
 :arch: System architecture
 :os: Operating system
@@ -15,5 +13,4 @@ Still here are the fields
 :release: Python version
 :build_date: build date of the python version
 :memory_bits: Platform architecture bit size (32bit or 64bit)
-:file_offset_bits: ?
 :host: Name of the machine

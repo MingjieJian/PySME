@@ -27,3 +27,6 @@ sphinx:
 python:
   install:
     - requirements: docs/requirements.txt
+    # Install the project itself so version metadata resolves from tags.
+    - method: pip
+      path: .

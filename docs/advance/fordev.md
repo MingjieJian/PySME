@@ -85,6 +85,21 @@ The versions are controlled by `git tag`.
 For PySME, setting a new tag will update the version to the latest tag.
 For SMElib, setting a new release will based on a tag. 
 
+### Docs versioning policy (RTD)
+
+PySME docs use a tag-driven versioning strategy.
+
+1. Create release tags in `vX.Y.Z` format (for example `v0.6.23`).
+2. `docs/conf.py` resolves `release` from `src/pysme/_version.py` (versioneer), so docs title/version follow git tags.
+3. `.readthedocs.yaml` installs both docs requirements and the project itself, so tag metadata is available during RTD build.
+
+RTD project settings must also be configured once (in the RTD web UI):
+
+- Keep both `latest` (branch docs) and `stable` (latest release tag) enabled.
+- Set default docs version to `stable`.
+- Add an automation rule to activate SemVer tags (`v*`) as RTD versions.
+- Hide or deactivate outdated branch versions if needed.
+
 ## NLTE departure coefficients
 
 What happens when the NLTE grid is added into PySME?

@@ -35,7 +35,8 @@ We estimate the cumulative distribution function of the **generalized** normal d
   #normalize
   y /= y[-1]
 ```
-![](https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Normal_Distribution_CDF.svg/500px-Normal_Distribution_CDF.svg.png)
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Normal_Distribution_CDF.svg/500px-Normal_Distribution_CDF.svg.png).
+
 (Example of the cumulative distribution function for various values of sigma)
 
 
