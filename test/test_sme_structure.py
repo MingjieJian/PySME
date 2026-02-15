@@ -5,6 +5,7 @@ from os.path import dirname
 import numpy as np
 import pytest
 
+from pysme.iliffe_vector import Iliffe_vector
 from pysme.sme import SME_Structure as SME_Struct
 
 
@@ -140,3 +141,27 @@ def test_fitresults():
     sme.fitresults.chisq = 100
     sme.fitresults.clear()
     assert sme.fitresults.chisq is None
+
+
+def test_wint_single_segment_array_input():
+    sme = SME_Struct()
+    wint = np.linspace(5000.0, 5001.0, 11)
+
+    sme.wint = wint
+
+    assert isinstance(sme.wint, Iliffe_vector)
+    assert sme.wint.nseg == 1
+    assert np.allclose(sme.wint[0], wint)
+
+
+def test_wint_multi_segment_list_input():
+    sme = SME_Struct()
+    wint0 = np.linspace(5000.0, 5001.0, 5)
+    wint1 = np.linspace(6000.0, 6002.0, 7)
+
+    sme.wint = [wint0, wint1]
+
+    assert isinstance(sme.wint, Iliffe_vector)
+    assert sme.wint.nseg == 2
+    assert np.allclose(sme.wint[0], wint0)
+    assert np.allclose(sme.wint[1], wint1)

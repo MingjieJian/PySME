@@ -252,6 +252,8 @@ class SME_Structure(Parameters):
             """),
         ("wran", None, this, this,
             "array of size (nseg, 2): beginning and end wavelength points of each segment"),
+        ("wint", None, vector, this,
+            "Iliffe_vector of shape (nseg, ...): optional wavelength grid passed to SMElib Transf"),
         ("wave", None, vector, this,
             "Iliffe_vector of shape (nseg, ...): wavelength"),
         ("spec", None, vector, this,

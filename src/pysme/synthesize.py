@@ -990,8 +990,22 @@ class Synthesizer:
         dll.InputWaveRange(wbeg-2, wend+2)
         dll.Opacity()
 
-        # Reuse adaptive wavelength grid in the jacobians
-        if reuse_wavelength_grid and segment in self.wint.keys():
+        # Priority for wavelength grid passed to SMElib:
+        # 1) user-provided sme.wint for this segment
+        # 2) internal cache when reuse_wavelength_grid=True
+        # 3) None (let SMElib compute it)
+        user_wint_seg = None
+        if getattr(sme, "wint", None) is not None:
+            try:
+                user_wint_seg = sme.wint[segment]
+                if user_wint_seg is not None and len(user_wint_seg) == 0:
+                    user_wint_seg = None
+            except (IndexError, KeyError, TypeError):
+                user_wint_seg = None
+
+        if user_wint_seg is not None:
+            wint_seg = np.asarray(user_wint_seg, dtype=np.float64)
+        elif reuse_wavelength_grid and segment in self.wint:
             wint_seg = self.wint[segment]
         else:
             wint_seg = None
@@ -1019,7 +1033,7 @@ class Synthesizer:
 
         # Store the adaptive wavelength grid for the future
         # if it was newly created
-        if wint_seg is None:
+        if user_wint_seg is None and wint_seg is None:
             self.wint[segment] = wint
 
         if not sme.specific_intensities_only:
