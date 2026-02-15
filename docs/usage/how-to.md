@@ -245,7 +245,7 @@ The synthesis of long spectra, i.e., a spectra covering a wide wavelength range 
 The deafult synthesis mode of PySME takes all the lines in the `linelist` into account to synthesize the spectra, thus the synthesis takes a long time.
 To make it even worse, the synthesis is repeated for each segment, thus if we have 10 segment covering from 3000-9000AA, all the lines (including those in ~9000AA) will be used for the first segment (3000-3600AA), and the total time cost is 10 times longer than just using one segment to cover the whole range.
 
-This situation can be improved by using the central depth and line range parameters to select the relevant lines for each segment, by simply adding `linelist_mode='auto'` in `synthesize_spectrum`:
+This situation can be improved by using the central depth and line range parameters to select the relevant lines for each segment, by simply adding `linelist_mode='dynamic'` in `synthesize_spectrum`:
 
 ```py
 from pysme.synthesize import synthesize_spectrum
@@ -256,10 +256,13 @@ sme.wave = np.arange(3000, 6000, 0.02).reshape(-1, 100)
 sme.linelist = line_list
 sme.nlte.set_nlte('Na')
 sme.cdr_depth_thres = 0.1
-sme = synthesize_spectrum(sme, linelist_mode='auto')
+sme = synthesize_spectrum(sme, linelist_mode='dynamic')
 ```
 
-The detailed explanaiton of what `linelist_mode='auto'` triggers is as follow:
+`linelist_mode='auto'` is still accepted as a deprecated compatibility alias
+and maps to `linelist_mode='dynamic'`.
+
+The detailed explanaiton of what `linelist_mode='dynamic'` triggers is as follow:
 
 1. If the `sme.linelist.cdr_paras` is None (means `update_cdr` hasn't run for it), or either the Teff, logg, monh and vmic (optional) in `sme.linelist.cdr_paras` differ from the input parameters by 250K, 0.5, 0.5 or 1 (you can change these parameter in `sme.linelist.cdr_paras_thres` as a dictionary), then run `update_cdr` under current input stellar parameters.
 2. Find the beginning and ending wavelength of each segment, wbeg and wend. 
@@ -289,7 +292,7 @@ sme.spec = obs_flux
 sme.uncs = obs_flux_err
 sme.linelist = line_list
 sme.cdr_depth_thres = 0.1
-sme = solve(sme, linelist_mode='auto')
+sme = solve(sme, linelist_mode='dynamic')
 ```
 
 It only triggers the `linelist_mode` variable in `synthesize_spectrum`.

@@ -74,6 +74,15 @@ from IDL SME. It is recommend however to use the new variables.
     this if you dont have an observation and dont want to
     specify the exact wavelength grid of the synthetic
     observation. Note that this is not an Illiffe vector.
+:wint:
+    Optional wavelength grid passed to SMElib `Transf` as adaptive grid for each segment.
+    Accepts the same segment-aware input styles as `wave`:
+    `numpy.ndarray` (single segment), `list` of arrays (multi-segment),
+    or `Iliffe_vector`.
+    If provided, `sme.wint[segment]` is used directly for synthesis.
+    If not provided, PySME can reuse an internal cached adaptive grid
+    when `reuse_wavelength_grid=True`; otherwise SMElib computes a new
+    adaptive grid.
 
 
 Abundance
@@ -160,7 +169,8 @@ Other Parameters
 :h2broad: flag determing whether to use H2 broadening or not (usually True)
 :accrt:
     Minimum accuracy for synthethized spectrum at wavelength grid
-    points in sme.wave. Values below 1e-4 are not meaningful
+    points in `sme.wint` (or SMElib adaptive grid if `sme.wint` is not set).
+    Values below 1e-4 are not meaningful.
 :accwi:
     Minimum accuracy for linear spectrum interpolation vs. wavelength.
     Values below 1e-4 are not meaningful.

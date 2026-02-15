@@ -11,7 +11,7 @@ PySME is its modern Python front-end: a wrapper around the original C++/Fortran 
    * Plane-parallel and spherical radiative-transfer engine  
    * LTE & 1-D NLTE line formation with pre-computed grids  
    * Automatic :math:`\chi^2` fitting for :math:`T_\mathrm{eff}`, :math:`\log{g}`, :math:`v_\mathrm{mic}`, [X/Fe] …  
-   * Seamless use of ATLAS, MARCS, Phoenix and PINN model atmospheres and VALD line lists
+   * Seamless use of ATLAS and MARCS model atmospheres and VALD line lists
 
 .. note:: 
 

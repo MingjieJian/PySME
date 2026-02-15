@@ -5,6 +5,9 @@ This page stores the change log for pysme since May 2024.
 ## In-development
 
 - (model) modify the atmosphere geometry to '' for auto desicion instead of 'PP'.
+- (sme structure) add `sme.wint` as a segment-aware optional transfer grid input for synthesis.
+- (synthesize) when `sme.wint` is provided, synthesis now prefers user-provided `wint` over internal cached wavelength grids.
+- (docs) update long-spectrum examples to prefer `linelist_mode='dynamic'` (keep `auto` as deprecated compatibility alias).
 
 ## In github-repo
 

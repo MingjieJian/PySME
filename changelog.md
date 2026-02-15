@@ -11,3 +11,6 @@
 - Updated `linelist_mode` naming:
   - Preferred values are now `"all"` and `"dynamic"`.
   - `"auto"` is kept as a deprecated compatibility alias and maps to `"dynamic"` with a `DeprecationWarning`.
+- Added segment-aware optional input `sme.wint` for synthesis transfer grids.
+  - Priority is now `sme.wint[segment]` first, then internal cached grids (when enabled), then SMElib adaptive grid generation.
+- Updated user docs accordingly (`sme_struct`, `quickstart`, and `how-to`).

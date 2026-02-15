@@ -37,6 +37,13 @@ sme.wave = [np.arange(6436, 6440, 0.1), np.arange(6442, 6443, 0.1)]
 # Or
 sme.wran = [[6436, 6440], [6442, 6443]]
 ```
+* Optional: provide the transfer grid used by SMElib
+```py
+# single segment
+sme.wint = np.arange(6436, 6440, 0.02)
+# multi-segment
+sme.wint = [np.arange(6436, 6440, 0.02), np.arange(6442, 6443, 0.02)]
+```
 
 Then use the `synthesize_spectrum` function:
 ```py
@@ -67,6 +74,8 @@ sme.mask = np.ones(len(wave), dtype=int)
 - The wavelength is always given in Angstrom. 
 - Note that the observation may be split into segments (orders etc). 
         - Then Wavelength is a list of arrays [segment1, segment2, ...], and the same applies to spec, uncs, and mask.
+- Segment-aware inputs include: `wave`, `spec`, `uncs`, `mask`, and `wint`.
+- Global (non-segmented) inputs include: `vmic`, `vmac`, and `vsini`.
 - The mask values are: 0: bad pixel, 1: line pixel, 2: continuum pixel, 4: vrad pixel
         - The masks are additive, i.e., you can set mask value to 5 for line and vrad pixel.
         - Note that the dtype of sme.mask must be int.
