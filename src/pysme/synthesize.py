@@ -4,6 +4,7 @@ Spectral Synthesis Module of SME
 """
 import logging
 import uuid
+import warnings
 
 import numpy as np
 from scipy.constants import speed_of_light
@@ -694,8 +695,19 @@ class Synthesizer:
         dll = self.get_dll(dll_id)
         dll.SetLineInfoMode(int(smelib_lineinfo_mode))
 
+        # "dynamic" is the preferred name in publications; keep "auto" as compatibility alias.
+        if linelist_mode == "auto":
+            warnings.warn(
+                "'linelist_mode=\"auto\"' is deprecated; use 'linelist_mode=\"dynamic\"' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            linelist_mode = "dynamic"
+        elif linelist_mode not in ("all", "dynamic"):
+            raise ValueError("linelist_mode must be one of: 'all', 'dynamic'")
+
         # Calculate the line central depth and line range if necessary
-        if linelist_mode == 'auto':
+        if linelist_mode == 'dynamic':
             # logger.info(f'linelist mode: {linelist_mode}')
             if sme.linelist.cdr_paras is None or not {'central_depth', 'line_range_s', 'line_range_e'}.issubset(sme.linelist._lines.columns) or np.abs(sme.linelist.cdr_paras[0]-sme.teff) >= sme.linelist.cdr_paras_thres['teff'] or (np.abs(sme.linelist.cdr_paras[1]-sme.logg) >= sme.linelist.cdr_paras_thres['logg']) or (np.abs(sme.linelist.cdr_paras[2]-sme.monh) >= sme.linelist.cdr_paras_thres['monh']) or cdr_create:
                 logger.info(f'Updating linelist central depth and line range.')
@@ -705,7 +717,7 @@ class Synthesizer:
         dll.SetLibraryPath()
         if passLineList:
             linelist_for_smelib = sme.linelist
-            if linelist_mode == 'auto':
+            if linelist_mode == 'dynamic':
                 line_indices = sme.linelist['wlcent'] < 0
                 v_broad = np.sqrt(sme.vmac**2 + sme.vsini**2 + (clight/sme.ipres)**2)
                 for i in range(sme.nseg):
@@ -881,7 +893,7 @@ class Synthesizer:
             sme.vrad = np.asarray(vrad)
             sme.vrad_unc = np.asarray(vrad_unc)
             nlte_flags = dll.GetNLTEflags()
-            if linelist_mode == 'auto':
+            if linelist_mode == 'dynamic':
                 sme.linelist._lines.loc[sme.linelist._lines['use_indices'], 'nlte_flag'] = nlte_flags.astype(int)
             else:
                 sme.nlte.flags = nlte_flags
@@ -979,8 +991,8 @@ class Synthesizer:
         dll.Opacity()
 
         # Reuse adaptive wavelength grid in the jacobians
-        if reuse_wavelength_grid and segment in self.wint.keys():
-            wint_seg = self.wint[segment]
+        if reuse_wavelength_grid: #and segment in self.wint.keys():
+            wint_seg = sme.wint[segment]
         else:
             wint_seg = None
 

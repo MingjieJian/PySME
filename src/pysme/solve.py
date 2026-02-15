@@ -136,7 +136,20 @@ class SME_Solver:
             pass
 
     def _residuals(
-        self, param, sme, spec, uncs, mask, segments="all", isJacobian=False, linelist_mode='all', smelib_lineinfo_mode=0, **_
+        self,
+        param,
+        sme,
+        spec,
+        uncs,
+        mask,
+        segments="all",
+        isJacobian=False,
+        linelist_mode="all",
+        smelib_lineinfo_mode=0,
+        cdr_database=None,
+        cdr_create=False,
+        vbroad_expend_ratio=2,
+        **_,
     ):
         """
         Calculates the synthetic spectrum with sme_func and
@@ -205,6 +218,9 @@ class SME_Solver:
                 radial_velocity_mode=radial_velocity_mode,
                 linelist_mode=linelist_mode,
                 smelib_lineinfo_mode=smelib_lineinfo_mode,
+                cdr_database=cdr_database,
+                cdr_create=cdr_create,
+                vbroad_expend_ratio=vbroad_expend_ratio,
             )
         except AtmosphereError as ae:
             # Something went wrong (left the grid? Don't go there)
@@ -260,6 +276,9 @@ class SME_Solver:
         method="2-point",
         linelist_mode='all',
         smelib_lineinfo_mode=0,
+        cdr_database=None,
+        cdr_create=False,
+        vbroad_expend_ratio=2,
         **_,
     ):
         """
@@ -291,6 +310,9 @@ class SME_Solver:
                 "segments": segments,
                 "linelist_mode": linelist_mode,
                 "smelib_lineinfo_mode": smelib_lineinfo_mode,
+                "cdr_database": cdr_database,
+                "cdr_create": cdr_create,
+                "vbroad_expend_ratio": vbroad_expend_ratio,
             },
         )
 
@@ -632,6 +654,9 @@ class SME_Solver:
         dynamic_param=None,
         linelist_mode="all",
         smelib_lineinfo_mode=0,
+        cdr_database=None,
+        cdr_create=False,
+        vbroad_expend_ratio=2,
     ):
         """
         Find the least squares fit parameters to an observed spectrum
@@ -796,6 +821,9 @@ class SME_Solver:
                         "method": sme.leastsquares_jac,
                         "linelist_mode": linelist_mode,
                         "smelib_lineinfo_mode": smelib_lineinfo_mode,
+                        "cdr_database": cdr_database,
+                        "cdr_create": cdr_create,
+                        "vbroad_expend_ratio": vbroad_expend_ratio,
                     },
                 )
                 # The jacobian is altered by the loss function
@@ -826,6 +854,9 @@ class SME_Solver:
                 segments,
                 linelist_mode=linelist_mode,
                 smelib_lineinfo_mode=smelib_lineinfo_mode,
+                cdr_database=cdr_database,
+                cdr_create=cdr_create,
+                vbroad_expend_ratio=vbroad_expend_ratio,
             )
         else:
             raise ValueError("No fit parameters given")

@@ -8,3 +8,6 @@
   - If both `derived_param` and `dynamic_param` are provided (and differ), `ValueError` is raised.
 - Updated internal solver logic and user-facing messages to use the "derived parameter" terminology.
 - Added `smelib_lineinfo_mode` passthrough in `solve()` call paths (`_residuals` and `_jacobian`) so fitting runs can use SMElib precomputed line-info modes.
+- Updated `linelist_mode` naming:
+  - Preferred values are now `"all"` and `"dynamic"`.
+  - `"auto"` is kept as a deprecated compatibility alias and maps to `"dynamic"` with a `DeprecationWarning`.
