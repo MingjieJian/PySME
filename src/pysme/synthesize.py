@@ -991,8 +991,8 @@ class Synthesizer:
         dll.Opacity()
 
         # Reuse adaptive wavelength grid in the jacobians
-        if reuse_wavelength_grid: #and segment in self.wint.keys():
-            wint_seg = sme.wint[segment]
+        if reuse_wavelength_grid and segment in self.wint.keys():
+            wint_seg = self.wint[segment]
         else:
             wint_seg = None
 
