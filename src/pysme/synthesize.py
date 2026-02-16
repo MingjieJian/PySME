@@ -706,12 +706,53 @@ class Synthesizer:
         elif linelist_mode not in ("all", "dynamic"):
             raise ValueError("linelist_mode must be one of: 'all', 'dynamic'")
 
-        # Calculate the line central depth and line range if necessary
+        # Calculate line properties and strong-line flags if necessary.
         if linelist_mode == 'dynamic':
             # logger.info(f'linelist mode: {linelist_mode}')
-            if sme.linelist.cdr_paras is None or not {'central_depth', 'line_range_s', 'line_range_e'}.issubset(sme.linelist._lines.columns) or np.abs(sme.linelist.cdr_paras[0]-sme.teff) >= sme.linelist.cdr_paras_thres['teff'] or (np.abs(sme.linelist.cdr_paras[1]-sme.logg) >= sme.linelist.cdr_paras_thres['logg']) or (np.abs(sme.linelist.cdr_paras[2]-sme.monh) >= sme.linelist.cdr_paras_thres['monh']) or cdr_create:
-                logger.info(f'Updating linelist central depth and line range.')
-                sme = self.update_cdr(sme, cdr_database=cdr_database, cdr_create=cdr_create, show_progress_bars=show_progress_bars)
+            need_update_cdr = (
+                sme.linelist.cdr_paras is None
+                or not {'central_depth', 'line_range_s', 'line_range_e'}.issubset(sme.linelist._lines.columns)
+                or np.abs(sme.linelist.cdr_paras[0] - sme.teff) >= sme.linelist.cdr_paras_thres['teff']
+                or np.abs(sme.linelist.cdr_paras[1] - sme.logg) >= sme.linelist.cdr_paras_thres['logg']
+                or np.abs(sme.linelist.cdr_paras[2] - sme.monh) >= sme.linelist.cdr_paras_thres['monh']
+                or cdr_create
+            )
+            if need_update_cdr:
+                logger.info('Updating linelist central depth and line range.')
+                sme = self.update_cdr(
+                    sme,
+                    cdr_database=cdr_database,
+                    cdr_create=cdr_create,
+                    show_progress_bars=show_progress_bars,
+                )
+
+            strong_depth_prev = sme.linelist.cdr_paras_thres.get('strong_depth')
+            strong_bin_width_prev = sme.linelist.cdr_paras_thres.get('strong_bin_width')
+            strong_depth_matches = (
+                strong_depth_prev is not None
+                and np.isclose(float(strong_depth_prev), float(sme.strong_depth_thres))
+            )
+            strong_bin_width_matches = (
+                strong_bin_width_prev is not None
+                and np.isclose(float(strong_bin_width_prev), float(sme.strong_bin_width))
+            )
+            need_update_strong = (
+                need_update_cdr
+                or 'strong' not in sme.linelist._lines.columns
+                or not strong_depth_matches
+                or not strong_bin_width_matches
+            )
+
+            if need_update_strong:
+                strong_mask = self.flag_strong_lines_by_bins(
+                    sme.linelist['wlcent'],
+                    sme.linelist['central_depth'],
+                    bin_width=sme.strong_bin_width,
+                    threshold=sme.strong_depth_thres,
+                )
+                sme.linelist._lines['strong'] = np.asarray(strong_mask, dtype=bool)
+                sme.linelist.cdr_paras_thres['strong_depth'] = float(sme.strong_depth_thres)
+                sme.linelist.cdr_paras_thres['strong_bin_width'] = float(sme.strong_bin_width)
 
         # Input Model data to C library
         dll.SetLibraryPath()
@@ -722,11 +763,7 @@ class Synthesizer:
                 v_broad = np.sqrt(sme.vmac**2 + sme.vsini**2 + (clight/sme.ipres)**2)
                 for i in range(sme.nseg):
                     line_indices |= (sme.linelist['line_range_e'] > sme.wran[i][0] * (1 - vbroad_expend_ratio*v_broad/clight)) & (sme.linelist['line_range_s'] < sme.wran[i][1] * (1 + vbroad_expend_ratio*v_broad/clight))
-                line_indices &= self.flag_strong_lines_by_bins(
-                    sme.linelist['wlcent'],
-                    sme.linelist['central_depth'],
-                    threshold=sme.cdr_depth_thres,
-                )
+                line_indices &= np.asarray(sme.linelist['strong'], dtype=bool)
                 sme.linelist._lines['use_indices'] = line_indices
                 linelist_for_smelib = sme.linelist[line_indices]
             line_ion_mask = dll.InputLineList(linelist_for_smelib)
@@ -745,7 +782,8 @@ class Synthesizer:
                         self.flag_strong_lines_by_bins(
                             linelist_for_smelib["wlcent"],
                             linelist_for_smelib["central_depth"],
-                            threshold=sme.cdr_depth_thres,
+                            bin_width=sme.strong_bin_width,
+                            threshold=sme.strong_depth_thres,
                         ),
                         dtype=np.uint8,
                     )
@@ -969,7 +1007,7 @@ class Synthesizer:
             #     ipres_segment = sme.ipres if np.size(sme.ipres) == 1 else sme.ipres[segment]
             #     if ipres_segment != 0:
             #         del_wav += sme.linelist['wlcent'] / ipres_segment
-            #     indices = (~((sme.linelist['line_range_e'] < wbeg - del_wav - line_margin) | (sme.linelist['line_range_s'] > wend + del_wav + line_margin))) & (sme.linelist['central_depth'] > sme.cdr_depth_thres)
+            #     indices = (~((sme.linelist['line_range_e'] < wbeg - del_wav - line_margin) | (sme.linelist['line_range_s'] > wend + del_wav + line_margin))) & (sme.linelist['central_depth'] > sme.strong_depth_thres)
             #     # logger.info(f"There are {len(sme.linelist[indices][np.char.find(sme.linelist[indices]['species'], 'Fe') >= 0])} Fe lines in sub linelist.")
             #     _ = dll.InputLineList(sme.linelist[indices])
             #     sme.linelist._lines['use_indices'] = indices
@@ -1102,81 +1140,81 @@ class Synthesizer:
 
         N_line_chunk, parallel, n_jobs, pysme_out = sme.cdr_N_line_chunk, sme.cdr_parallel, sme.cdr_n_jobs, sme.cdr_pysme_out
         self.update_cdr_switch = True
+        try:
+            # Decide how many chunks to be divided
+            N_chunk = int(np.ceil(len(sme.linelist) / N_line_chunk))
 
-        # Decide how many chunks to be divided
-        N_chunk = int(np.ceil(len(sme.linelist) / N_line_chunk))
+            # Divide the line list to sub line lists
+            sub_linelist = [sme.linelist[N_line_chunk*i:N_line_chunk*(i+1)] for i in range(N_chunk)]
 
-        # Divide the line list to sub line lists
-        sub_linelist = [sme.linelist[N_line_chunk*i:N_line_chunk*(i+1)] for i in range(N_chunk)]
-
-        if sum(len(item) for item in sub_linelist) != len(sme.linelist):
-            raise ValueError
-        
-        if cdr_database is not None:
-            # cdr_database is provided, use it to update the central depth and line range
-            self._interpolate_or_compute_and_update_linelist(sme, cdr_database, cdr_create=cdr_create, cdr_grid_overwrite=cdr_grid_overwrite, mode=mode, dims=dims, show_progress_bars=show_progress_bars)
-            return sme
-
-        logger.info('[cdr] Using calculation to update central depth and line range.')
-        sub_sme_init = SME_Structure()
-        exclude_keys = ['_wave', '_synth', '_spec', '_uncs', '_mask', '_SME_Structure__wran', '_normalize_by_continuum', '_specific_intensities_only', '_telluric', '__cont', '_linelist', '_fitparameters', '_fitresults']
-        for key, value in sme.__dict__.items():
-            if key not in exclude_keys and 'cscale' not in key and 'vrad' not in key:
-                setattr(sub_sme_init, key, deepcopy(value))
-        sub_sme_init.wave = np.arange(5000, 5010, 1)
-
-        if not parallel:
-            for i in tqdm(range(N_chunk), disable=not show_progress_bars):
-                sub_sme_init.linelist = sub_linelist[i]
-                sub_sme_init = self.synthesize_spectrum(sub_sme_init)
-                if i == 0:
-                    stack_linelist = deepcopy(sub_sme_init.linelist)
-                else:
-                    stack_linelist._lines = pd.concat([stack_linelist._lines, sub_sme_init.linelist._lines])
-        else:
-            sub_sme = []
-            sub_sme_init.linelist = sme.linelist[:1]
-            sub_sme_init = self.synthesize_spectrum(sub_sme_init)
-            for i in range(N_chunk):
-                sub_sme.append(deepcopy(sub_sme_init))
-                sub_sme[i].linelist = sub_linelist[i]
-
-            if pysme_out:
-                sub_sme = pqdm(sub_sme, self.synthesize_spectrum, n_jobs=n_jobs, disable=not show_progress_bars)
-            else:
-                with redirect_stdout(open(f"/dev/null", 'w')):
-                    sub_sme = pqdm(sub_sme, self.synthesize_spectrum, n_jobs=n_jobs, disable=not show_progress_bars)
+            if sum(len(item) for item in sub_linelist) != len(sme.linelist):
+                raise ValueError
             
-            for i in range(N_chunk):
-                sub_linelist[i] = sub_sme[i].linelist
-            stack_linelist = deepcopy(sub_linelist[0])
-            stack_linelist._lines = pd.concat([ele._lines for ele in sub_linelist])  
-            # logger.info(f'{sub_linelist}')
+            if cdr_database is not None:
+                # cdr_database is provided, use it to update the central depth and line range
+                self._interpolate_or_compute_and_update_linelist(sme, cdr_database, cdr_create=cdr_create, cdr_grid_overwrite=cdr_grid_overwrite, mode=mode, dims=dims, show_progress_bars=show_progress_bars)
+                return sme
 
-        # Remove
-        if len(stack_linelist) != len(sme.linelist):
-            raise ValueError
-        for column in ['central_depth', 'line_range_s', 'line_range_e']:
-            if column in sme.linelist.columns:
-                sme.linelist._lines = sme.linelist._lines.drop(column, axis=1)
-        for column in ['central_depth', 'line_range_s', 'line_range_e']:
-            sme.linelist._lines[column] = stack_linelist._lines[column]
-        # pickle.dump([sme.linelist._lines, stack_linelist._lines], open('linelist.pkl', 'wb'))
+            logger.info('[cdr] Using calculation to update central depth and line range.')
+            sub_sme_init = SME_Structure()
+            exclude_keys = ['_wave', '_synth', '_spec', '_uncs', '_mask', '_SME_Structure__wran', '_normalize_by_continuum', '_specific_intensities_only', '_telluric', '__cont', '_linelist', '_fitparameters', '_fitresults']
+            for key, value in sme.__dict__.items():
+                if key not in exclude_keys and 'cscale' not in key and 'vrad' not in key:
+                    setattr(sub_sme_init, key, deepcopy(value))
+            sub_sme_init.wave = np.arange(5000, 5010, 1)
 
-        # Manually change the depth of all H 1 lines to 1, to include them back.
-        sme.linelist._lines.loc[sme.linelist['species'] == 'H 1', 'central_depth'] = 1 
+            if not parallel:
+                for i in tqdm(range(N_chunk), disable=not show_progress_bars):
+                    sub_sme_init.linelist = sub_linelist[i]
+                    sub_sme_init = self.synthesize_spectrum(sub_sme_init)
+                    if i == 0:
+                        stack_linelist = deepcopy(sub_sme_init.linelist)
+                    else:
+                        stack_linelist._lines = pd.concat([stack_linelist._lines, sub_sme_init.linelist._lines])
+            else:
+                sub_sme = []
+                sub_sme_init.linelist = sme.linelist[:1]
+                sub_sme_init = self.synthesize_spectrum(sub_sme_init)
+                for i in range(N_chunk):
+                    sub_sme.append(deepcopy(sub_sme_init))
+                    sub_sme[i].linelist = sub_linelist[i]
 
-        # Manually change the 2000 line_range to 0.03.
-        indices = np.isclose(sme.linelist['line_range_e'] - sme.linelist['line_range_s'], 2000, rtol=1e-4, atol=5, equal_nan=False)
-        sme.linelist._lines.loc[indices, 'line_range_s'] = sme.linelist._lines.loc[indices, 'wlcent']-0.3
-        sme.linelist._lines.loc[indices, 'line_range_e'] = sme.linelist._lines.loc[indices, 'wlcent']+0.3
+                if pysme_out:
+                    sub_sme = pqdm(sub_sme, self.synthesize_spectrum, n_jobs=n_jobs, disable=not show_progress_bars)
+                else:
+                    with redirect_stdout(open(f"/dev/null", 'w')):
+                        sub_sme = pqdm(sub_sme, self.synthesize_spectrum, n_jobs=n_jobs, disable=not show_progress_bars)
+                
+                for i in range(N_chunk):
+                    sub_linelist[i] = sub_sme[i].linelist
+                stack_linelist = deepcopy(sub_linelist[0])
+                stack_linelist._lines = pd.concat([ele._lines for ele in sub_linelist])  
+                # logger.info(f'{sub_linelist}')
 
-        # Write the stellar parameters used here to the line list
-        sme.linelist.cdr_paras = np.array([sme.teff, sme.logg, sme.monh, sme.vmic])
+            # Remove
+            if len(stack_linelist) != len(sme.linelist):
+                raise ValueError
+            for column in ['central_depth', 'line_range_s', 'line_range_e']:
+                if column in sme.linelist.columns:
+                    sme.linelist._lines = sme.linelist._lines.drop(column, axis=1)
+            for column in ['central_depth', 'line_range_s', 'line_range_e']:
+                sme.linelist._lines[column] = stack_linelist._lines[column]
+            # pickle.dump([sme.linelist._lines, stack_linelist._lines], open('linelist.pkl', 'wb'))
 
-        self.update_cdr_switch = False
+            # Manually change the depth of all H 1 lines to 1, to include them back.
+            sme.linelist._lines.loc[sme.linelist['species'] == 'H 1', 'central_depth'] = 1 
 
-        return sme
+            # Manually change the 2000 line_range to 0.03.
+            indices = np.isclose(sme.linelist['line_range_e'] - sme.linelist['line_range_s'], 2000, rtol=1e-4, atol=5, equal_nan=False)
+            sme.linelist._lines.loc[indices, 'line_range_s'] = sme.linelist._lines.loc[indices, 'wlcent']-0.3
+            sme.linelist._lines.loc[indices, 'line_range_e'] = sme.linelist._lines.loc[indices, 'wlcent']+0.3
+
+            # Write the stellar parameters used here to the line list
+            sme.linelist.cdr_paras = np.array([sme.teff, sme.logg, sme.monh, sme.vmic])
+
+            return sme
+        finally:
+            self.update_cdr_switch = False
 
     def _interpolate_or_compute_and_update_linelist(
         self, sme, cdr_database, cdepth_decimals=4, cdepth_thres=0,

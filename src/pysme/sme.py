@@ -301,7 +301,8 @@ class SME_Structure(Parameters):
         self.cdr_parallel = True
         self.cdr_n_jobs = 10
         self.cdr_pysme_out = False
-        self.cdr_depth_thres = 0.0
+        self.strong_depth_thres = 0.001
+        self.strong_bin_width = 0.2
         self.tdnlte_H = False
         # self.tdnlte_H_new = False
 

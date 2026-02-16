@@ -147,8 +147,7 @@ For more information see [system_info](../concepts/system_info.md).
 
 :system_info: The system information object. It replaces the idlver object.
 
-Other Parameters
-----------------
+## Other Parameters
 
 :gam6: van der Waals scaling factor (usually 1)
 :h2broad: flag determing whether to use H2 broadening or not (usually True)
