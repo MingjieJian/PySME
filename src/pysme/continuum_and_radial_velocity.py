@@ -322,7 +322,7 @@ class ContinuumNormalizationMCMC(ContinuumNormalizationAbstract):
             if sme.cscale is not None:
                 cscale = sme.cscale[segments]
             else:
-                cscale = np.zeros(nseg, ndeg + 1)
+                cscale = np.zeros((nseg, ndeg + 1))
                 for i, seg in enumerate(segments):
                     cscale[i, -1] = np.nanpercentile(y_obs[seg], 95)
 
@@ -1199,18 +1199,21 @@ def match_rv_continuum(sme, segments, x_syn, y_syn):
     else:
         if sme.cscale_type == "mcmc":
             for s in segments:
-                (
-                    vrad[s],
-                    vrad_unc[s],
-                    cscale[s],
-                    cscale_unc[s],
-                ) = continuum_normalization(
+                rv_i, rv_unc_i, cscale_i, cscale_unc_i = continuum_normalization(
                     sme,
                     x_syn[s],
                     y_syn[s],
                     s,
                     rvel=vrad[s],
                 )
+                # MCMC returns arrays even for one segment; normalize them to row/scalar.
+                cscale_row = np.asarray(cscale_i, dtype=float).reshape(1, -1)[0]
+                vrad[s] = np.asarray(rv_i, dtype=float).reshape(-1)[0]
+                vrad_unc[s] = np.asarray(rv_unc_i, dtype=float).reshape(1, 2)[0]
+                cscale[s] = cscale_row
+                cscale_unc[s] = np.asarray(cscale_unc_i, dtype=float).reshape(
+                    1, cscale_row.size, 2
+                )[0]
         else:
             for s in segments:
                 cscale[s] = continuum_normalization(

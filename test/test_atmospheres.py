@@ -23,7 +23,6 @@ def atmosphere(atmosphere_name):
 
 
 @pytest.fixture
-@pytest.mark.usefixtures("lfs_atmo")
 def interpolator(atmosphere, lfs_atmo):
     interp = AtmosphereInterpolator(
         depth=atmosphere.depth,
@@ -35,7 +34,6 @@ def interpolator(atmosphere, lfs_atmo):
 
 
 @pytest.fixture
-@pytest.mark.usefixtures("lfs_atmo")
 def atmosphere_grid(atmosphere_name, lfs_atmo):
     name = lfs_atmo.get(atmosphere_name)
     atmo = SavFile(name, source=name)
