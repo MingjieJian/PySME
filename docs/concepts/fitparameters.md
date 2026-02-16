@@ -45,3 +45,4 @@ It is therefore recommended to use `'cscale_flag'` and `'vrad_flag'` to
 specify the desired fitting method.
 If `'vrad'` is passed as a fitparameter it is equivalent to `'vrad_flag' = 'each'`,
 and if `'cont'` is passed it is the same as `'cscale_flag' = 'linear'`.
+See the [radial velocity](../fundamentals/rv.md) and [continuum](../fundamentals/continuum.md) page for more information.

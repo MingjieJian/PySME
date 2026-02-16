@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 smelib_releases = {
     "default":  "latest/download",
+    "0.6.23":   "download/v6.13.12",
     "0.4.198":  "download/v6.0.6",
     "0.4.199":  "download/v6.0.6",          
 }

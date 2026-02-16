@@ -47,7 +47,27 @@ The atmopshere object has the following fields:
 |`wlstd`|Wavelength for continuum optical depth scale.|Å, Default value: 5000Å|
 |`opflag`|Flags that indicate whether to enable various opacity packages during the radiative transfer calculation||
 
-## Grid atmospheres 
+## Atmosphere grids:
+
+- recommended:
+  - marcs2012.sav [(Gustafsson et al. 2008)](https://ui.adsabs.harvard.edu/abs/2008A%26A...486..951G)
+  - marcs2012p_t0.0.sav
+  - marcs2012p_t1.0.sav
+  - marcs2012p_t2.0.sav
+  - marcs2012s_t1.0.sav
+  - marcs2012s_t2.0.sav
+  - marcs2012s_t5.0.sav
+  - marcs2012t00cooldwarfs.sav
+  - marcs2012t01cooldwarfs.sav
+  - marcs2012t02cooldwarfs.sav
+
+- deprecated:
+  - atlas12.sav
+  - atlas9_vmic0.0.sav
+  - atlas9_vmic2.0.sav
+  - ll_vmic2.0.sav
+
+### Grid plots
 
 ![](../img/atmosphere/marcs2012_grid.png)
 ![](../img/atmosphere/marcs2012p_t0.0_grid.png)

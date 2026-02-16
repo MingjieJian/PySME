@@ -36,8 +36,7 @@ SME structure:
 
 Abundance:
     * Python Class object
-    * set of three default solar abundances available
-      ("asplund2009", "grevesse2007", "lodders2003")
+    * set of multiple solar abundances available
     * can output abundances in different formats
       ('sme', 'n/nTot', 'n/nH', and 'H=12')
     * internal format is 'H=12', i.e. log(X/H) + 12

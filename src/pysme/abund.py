@@ -678,8 +678,10 @@ class Abund(IPersist):
         Parameters
         ----------
         pattern_name : str
-            Name of the predefined option to use. One of 'asplund2009', 'grevesse2007',
-            'lodders2003', 'empty'
+            Name of the predefined option to use. One of:
+            'grevesse2007', 'asplund2009', 'asplund2021', 'asplund2005',
+            'lodders2003', 'anders1989', 'grevesse1996', 'grevesse1998', ,'lodders2010',
+            'empty'
 
         Raises
         ------
@@ -719,8 +721,10 @@ class Abund(IPersist):
             self._pattern = self.empty_pattern()
         else:
             raise ValueError(
-                f"Got abundance pattern name {pattern_name} should be one of"
-                "'asplund2009', 'asplund2021', 'grevesse2007', 'lodders2003', or 'empty'."
+                f"Got abundance pattern name {pattern_name}. It should be one of: "
+                "'grevesse2007' (or 'solar'), 'asplund2009', 'asplund2021', "
+                "'asplund2005', 'lodders2003', 'lodders2010', 'anders1989', "
+                "'grevesse1996', 'grevesse1998', or 'empty'."
             )
 
     def set_pattern_by_value(self, pattern, type):
@@ -867,6 +871,6 @@ class Abund(IPersist):
 
     @staticmethod
     def solar():
-        """Return solar abundances of asplund 2009"""
+        """Return solar abundances of Grevesse 2007"""
         solar = Abund(pattern="solar", monh=0)
         return solar

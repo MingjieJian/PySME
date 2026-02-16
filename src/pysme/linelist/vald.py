@@ -142,6 +142,28 @@ class ValdFile(LineList):
         """
         return ValdFile(filename)
 
+
+    def __getitem__(self, index):
+        if isinstance(index, str) and hasattr(self, index):
+            return getattr(self, index)
+        if isinstance(index, (list, str)):
+            if len(index) == 0:
+                return_list = deepcopy(self)
+                return_list._lines = self._lines.iloc[[]]
+                return_list.nlines = len(return_list._lines)
+                return return_list
+            values = self._lines[index].values
+            if index in self.string_columns:
+                values = values.astype(str)
+            return values
+
+        if isinstance(index, int):
+            index = slice(index, index + 1)
+        return_list = deepcopy(self)
+        return_list._lines = self._lines.iloc[index]
+        return_list.nlines = len(return_list._lines)
+        return return_list
+
     def identify_valdtype(self, lines):
         """Determines whether the file was created with extract_all, extract_stellar, or extract_element
         and whether it is in long or short format

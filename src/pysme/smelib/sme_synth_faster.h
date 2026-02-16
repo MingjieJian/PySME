@@ -47,6 +47,8 @@ extern "C" const char *SME_DLL InputWaveRange(int n, void *arg[]);    /* Read in
 extern "C" const char *SME_DLL SetVWscale(int n, void *arg[]);        /* Set van der Waals scaling factor */
 extern "C" const char *SME_DLL SetH2broad(int n, void *arg[]);        /* Set flag for H2 molecule */
 extern "C" const char *SME_DLL ClearH2broad(int n, void *arg[]);      /* Clear flag for H2 molecule */
+extern "C" const char *SME_DLL SetLineInfoMode(int n, void *arg[]);   /* Set handling mode for precomputed line info */
+extern "C" const char *SME_DLL InputLinePrecomputedInfo(int n, void *arg[]); /* Input precomputed line ranges/strong mask */
 extern "C" const char *SME_DLL InputLineList(int n, void *arg[]);     /* Read in line list */
 extern "C" const char *SME_DLL OutputLineList(int n, void *arg[]);    /* Return line list */
 extern "C" const char *SME_DLL UpdateLineList(int n, void *arg[]);    /* Change line list parameters */
@@ -58,6 +60,7 @@ extern "C" const char *SME_DLL ResetDepartureCoefficients(int n, void *arg[]); /
 extern "C" const char *SME_DLL InputAbund(int n, void *arg[]);                 /* Read in abundances */
 extern "C" const char *SME_DLL Opacity(int n, void *arg[]);                    /* Calculate opacities */
 extern "C" const char *SME_DLL GetOpacity(int n, void *arg[]);                 /* Returns specific cont. opacity */
+extern "C" const char *SME_DLL GetFraction(int n, void *arg[]);                /* Returns fraction or partition function */
 extern "C" const char *SME_DLL Ionization(int n, void *arg[]);                 /* Perfrom EOS calculations */
 extern "C" const char *SME_DLL GetDensity(int n, void *arg[]);                 /* Returns density in g/cm^3 */
 extern "C" const char *SME_DLL GetNatom(int n, void *arg[]);                   /* Returns atomic number density */

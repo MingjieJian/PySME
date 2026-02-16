@@ -1,0 +1,52 @@
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.home-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 13.5rem;
+  padding: 1.1rem 1rem;
+  border: 1px solid var(--pst-color-border, #d0d7de);
+  border-radius: 0.75rem;
+  background: var(--pst-color-surface, #f6f8fa);
+  text-decoration: none;
+  color: var(--pst-color-text-base, #24292f);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.home-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  border-color: var(--pst-color-primary, #2b6cb0);
+  text-decoration: none;
+}
+
+.home-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.home-card p {
+  margin: 0;
+  color: var(--pst-color-text-muted, #57606a);
+}
+
+.home-card-cta {
+  margin-top: 1rem;
+  align-self: flex-start;
+  font-weight: 600;
+  color: var(--pst-color-primary, #2b6cb0);
+}
+
+@media (max-width: 1050px) {
+  .home-cards {
+    grid-template-columns: 1fr;
+  }
+}

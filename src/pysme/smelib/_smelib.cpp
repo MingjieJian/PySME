@@ -163,6 +163,105 @@ static PyObject *smelib_ClearH2broad(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
+static char smelib_SetLineInfoMode_docstring[] = "Set handling mode for precomputed line info";
+static PyObject *smelib_SetLineInfoMode(PyObject *self, PyObject *args)
+{
+    const int n = 1;
+    const char *result = NULL;
+    void *args_c[n];
+    int mode = 0;
+
+    if (!PyArg_ParseTuple(args, "i", &mode))
+        return NULL;
+
+    args_c[0] = &mode;
+    result = SetLineInfoMode(n, args_c);
+    if (result != NULL && result[0] != OK_response)
+    {
+        PyErr_SetString(PyExc_RuntimeError, result);
+        return NULL;
+    }
+
+    Py_RETURN_NONE;
+}
+
+static char smelib_InputLinePrecomputedInfo_docstring[] = "Input precomputed line ranges and strong mask";
+static PyObject *smelib_InputLinePrecomputedInfo(PyObject *self, PyObject *args)
+{
+    const char *result = NULL;
+    PyObject *range_s_obj = NULL, *range_e_obj = NULL, *strong_obj = NULL, *depth_obj = NULL;
+    PyArrayObject *range_s_arr = NULL, *range_e_arr = NULL, *strong_arr = NULL, *depth_arr = NULL;
+    void *args_c[5];
+    int n = 4;
+    int nlines = 0;
+
+    if (!PyArg_ParseTuple(args, "OOO|O", &range_s_obj, &range_e_obj, &strong_obj, &depth_obj))
+        return NULL;
+
+    range_s_arr = (PyArrayObject *)PyArray_FROM_OTF(range_s_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    range_e_arr = (PyArrayObject *)PyArray_FROM_OTF(range_e_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    strong_arr = (PyArrayObject *)PyArray_FROM_OTF(strong_obj, NPY_UBYTE, NPY_ARRAY_IN_ARRAY);
+    if (range_s_arr == NULL || range_e_arr == NULL || strong_arr == NULL)
+        goto fail;
+
+    if (PyArray_NDIM(range_s_arr) != 1 || PyArray_NDIM(range_e_arr) != 1 || PyArray_NDIM(strong_arr) != 1)
+    {
+        PyErr_SetString(PyExc_ValueError, "Expected 1D arrays for range_s, range_e, and strong_mask");
+        goto fail;
+    }
+
+    nlines = (int)PyArray_DIM(range_s_arr, 0);
+    if ((int)PyArray_DIM(range_e_arr, 0) != nlines || (int)PyArray_DIM(strong_arr, 0) != nlines)
+    {
+        PyErr_SetString(PyExc_ValueError, "Expected range_s, range_e, and strong_mask to have same length");
+        goto fail;
+    }
+
+    args_c[0] = &nlines;
+    args_c[1] = PyArray_DATA(range_s_arr);
+    args_c[2] = PyArray_DATA(range_e_arr);
+    args_c[3] = PyArray_DATA(strong_arr);
+
+    if (depth_obj != NULL && depth_obj != Py_None)
+    {
+        depth_arr = (PyArrayObject *)PyArray_FROM_OTF(depth_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+        if (depth_arr == NULL)
+            goto fail;
+        if (PyArray_NDIM(depth_arr) != 1)
+        {
+            PyErr_SetString(PyExc_ValueError, "Expected 1D array for central_depth");
+            goto fail;
+        }
+        if ((int)PyArray_DIM(depth_arr, 0) != nlines)
+        {
+            PyErr_SetString(PyExc_ValueError, "Expected central_depth to have same length as line ranges");
+            goto fail;
+        }
+        args_c[4] = PyArray_DATA(depth_arr);
+        n = 5;
+    }
+
+    result = InputLinePrecomputedInfo(n, args_c);
+    if (result != NULL && result[0] != OK_response)
+    {
+        PyErr_SetString(PyExc_RuntimeError, result);
+        goto fail;
+    }
+
+    Py_XDECREF(range_s_arr);
+    Py_XDECREF(range_e_arr);
+    Py_XDECREF(strong_arr);
+    Py_XDECREF(depth_arr);
+    Py_RETURN_NONE;
+
+fail:
+    Py_XDECREF(range_s_arr);
+    Py_XDECREF(range_e_arr);
+    Py_XDECREF(strong_arr);
+    Py_XDECREF(depth_arr);
+    return NULL;
+}
+
 static char smelib_InputLineList_docstring[] = "Read in line list";
 static PyObject *smelib_InputLineList(PyObject *self, PyObject *args)
 {
@@ -791,8 +890,11 @@ static PyObject *smelib_GetOpacity(PyObject *self, PyObject *args, PyObject *kwd
     PyArrayObject *arr;
 
     static const char *keywords[] = {"flag", "species", "key", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|ss", const_cast<char **>(keywords), &choice))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|ss", const_cast<char **>(keywords),
+                                     &choice, &species, &key))
+    {
         return NULL;
+    }
 
     if (strcmp(choice, "COPSTD") == 0)
         number = -3;
@@ -880,6 +982,48 @@ static PyObject *smelib_GetOpacity(PyObject *self, PyObject *args, PyObject *kwd
     args_c[2] = PyArray_DATA(arr);
 
     result = GetOpacity(n, args_c);
+
+    if (result != NULL && result[0] != OK_response)
+    {
+        Py_DECREF(arr);
+        PyErr_SetString(PyExc_RuntimeError, result);
+        return NULL;
+    }
+    return (PyObject *)arr;
+}
+
+static char smelib_GetFraction_docstring[] = "Returns fraction/partition function for a species";
+static PyObject *smelib_GetFraction(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    int n = 4;
+    void *args_c[4];
+    const char *result = NULL;
+    char *species = NULL;
+    short mode = 2;
+    short length;
+    IDL_STRING species_idl;
+
+    PyArrayObject *arr;
+
+    static const char *keywords[] = {"species", "mode", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|h", const_cast<char **>(keywords),
+                                     &species, &mode))
+        return NULL;
+
+    species_idl.slen = strlen(species);
+    species_idl.s = species;
+    species_idl.stype = 0;
+
+    length = GetNRHOX();
+    npy_intp dims[] = {length};
+    arr = (PyArrayObject *)PyArray_SimpleNew(1, dims, NPY_DOUBLE);
+
+    args_c[0] = &species_idl;
+    args_c[1] = &mode;
+    args_c[2] = &length;
+    args_c[3] = PyArray_DATA(arr);
+
+    result = GetFraction(n, args_c);
 
     if (result != NULL && result[0] != OK_response)
     {
@@ -1368,6 +1512,8 @@ static PyMethodDef module_methods[] = {
     {"SetVWscale", smelib_SetVWscale, METH_VARARGS, smelib_SetVWscale_docstring},
     {"SetH2broad", smelib_SetH2broad, METH_NOARGS, smelib_SetH2broad_docstring},
     {"ClearH2broad", smelib_ClearH2broad, METH_NOARGS, smelib_ClearH2broad_docstring},
+    {"SetLineInfoMode", smelib_SetLineInfoMode, METH_VARARGS, smelib_SetLineInfoMode_docstring},
+    {"InputLinePrecomputedInfo", smelib_InputLinePrecomputedInfo, METH_VARARGS, smelib_InputLinePrecomputedInfo_docstring},
     {"InputLineList", smelib_InputLineList, METH_VARARGS, smelib_InputLineList_docstring},
     {"OutputLineList", smelib_OutputLineList, METH_NOARGS, smelib_OutputLineList_docstring},
     {"UpdateLineList", smelib_UpdateLineList, METH_VARARGS, smelib_UpdateLineList_docstring},
@@ -1378,6 +1524,7 @@ static PyMethodDef module_methods[] = {
     {"InputAbund", smelib_InputAbund, METH_VARARGS, smelib_InputAbund_docstring},
     {"Opacity", smelib_Opacity, METH_NOARGS, smelib_Opacity_docstring},
     {"GetOpacity", (PyCFunction)(void (*)(void))smelib_GetOpacity, METH_VARARGS | METH_KEYWORDS, smelib_GetOpacity_docstring},
+    {"GetFraction", (PyCFunction)(void (*)(void))smelib_GetFraction, METH_VARARGS | METH_KEYWORDS, smelib_GetFraction_docstring},
     {"Ionization", smelib_Ionization, METH_VARARGS, smelib_Ionization_docstring},
     {"GetDensity", smelib_GetDensity, METH_NOARGS, smelib_GetDensity_docstring},
     {"GetNatom", smelib_GetNatom, METH_NOARGS, smelib_GetNatom_docstring},

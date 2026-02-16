@@ -6,7 +6,7 @@
 Call `util.start_logging(filename)`.
 
 ```py
-from SME import util
+from pysme import util
 util.start_logging("your_log_file.log")
 ```
 

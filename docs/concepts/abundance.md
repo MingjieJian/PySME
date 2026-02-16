@@ -58,7 +58,7 @@ values of H, He, and Li are approximately 3.16e4, 2.69e3, and
 
 ## Solar metallicity
 
-PySME contains three pre defined sets of solar abundances,
+PySME contains multiple pre defined sets of solar abundances
 for you to choose from. They are:
 
 From solar photosphere:
@@ -66,7 +66,7 @@ From solar photosphere:
 - `grevesse1996`: [Grevesse, Noels & Sauval (1996, ASPC)](https://ui.adsabs.harvard.edu/abs/1996ASPC...99..117G)
 - `grevesse1998`: [Grevesse, & Sauval (1998, SSRv)](https://ui.adsabs.harvard.edu/abs/1998SSRv...85..161G) 
 - `asplund2005`: [Asplund, Grevesse & Sauval (2005, ASPC)](https://ui.adsabs.harvard.edu/abs/2005ASPC..336...25A)
-- `grevesse2007`: [Grevesse, Asplund & Sauval (2007, SSRv)](https://ui.adsabs.harvard.edu/abs/2007SSRv..130..105G)
+- `grevesse2007` (alias: `solar`): [Grevesse, Asplund & Sauval (2007, SSRv)](https://ui.adsabs.harvard.edu/abs/2007SSRv..130..105G)
 - `asplund2009`: [Asplund, Grevesse & Sauval (2009, ARA&A)](https://ui.adsabs.harvard.edu/abs/2009ARA&A..47..481A)
 - `asplund2021`: [Asplund, Amarsi & Grevesse (2021, A&A)](https://ui.adsabs.harvard.edu/abs/2021A&A...653A.141A)
 

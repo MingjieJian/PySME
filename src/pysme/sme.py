@@ -252,6 +252,8 @@ class SME_Structure(Parameters):
             """),
         ("wran", None, this, this,
             "array of size (nseg, 2): beginning and end wavelength points of each segment"),
+        ("wint", None, vector, this,
+            "Iliffe_vector of shape (nseg, ...): optional wavelength grid passed to SMElib Transf"),
         ("wave", None, vector, this,
             "Iliffe_vector of shape (nseg, ...): wavelength"),
         ("spec", None, vector, this,
@@ -299,7 +301,8 @@ class SME_Structure(Parameters):
         self.cdr_parallel = True
         self.cdr_n_jobs = 10
         self.cdr_pysme_out = False
-        self.cdr_depth_thres = 0.0
+        self.strong_depth_thres = 0.001
+        self.strong_bin_width = 0.2
         self.tdnlte_H = False
         # self.tdnlte_H_new = False
 

@@ -220,7 +220,14 @@ class LineList(IPersist):
         #:pandas.DataFrame: DataFrame that contains all the data
         self._lines = linedata  # should have all the fields (20)
         self.cdr_paras = None
-        self.cdr_paras_thres = {'teff':250, 'logg':0.5, 'monh':0.5, 'vmic':1}
+        self.cdr_paras_thres = {
+            'teff': 250,
+            'logg': 0.5,
+            'monh': 0.5,
+            'vmic': 1,
+            'strong_depth': 0.001,
+            'strong_bin_width': 0.2,
+        }
         if medium in ["air", "vac", None]:
             self._medium = medium
         else:

@@ -12,7 +12,7 @@ def lfs_available():
     return r.status_code == 200
 
 
-skipif_lfs = pytest.mark.skipif(lfs_available(), reason="LFS not available")
+skipif_lfs = pytest.mark.skipif(not lfs_available(), reason="LFS not available")
 
 
 @pytest.fixture
