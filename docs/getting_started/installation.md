@@ -3,7 +3,8 @@
 PySME can be installed through PyPI (recommended; stable release) or from github (the latest version in `develop` branch) directly.
 
 ```{admonition} Supported environments:
-- Platforms: Linux, macOS
+- Platforms: Linux, macOS (arm platform)
+    - The x86/Intel platform macOS is not supported anymore, but you can still install v0.6.23, the last supported PySME version, or download [SMElib](https://github.com/MingjieJian/SMElib) and compile it manually.
 - Windows: supported via WSL2 (install/run PySME inside the Linux subsystem)
 - Python versions: 
     - 3.9–3.13.
