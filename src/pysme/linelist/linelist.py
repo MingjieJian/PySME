@@ -252,8 +252,16 @@ class LineList(IPersist):
         return self._lines.itertuples(index=False)
 
     def __getitem__(self, index):
-        if isinstance(index, str) and hasattr(self, index):
-            return getattr(self, index)
+        if isinstance(index, str):
+            if index in self._lines:
+                values = self._lines[index].values
+                if index in self.string_columns:
+                    # Pandas StringArray can degrade to object for NumPy string ufuncs
+                    # in NumPy 2; force a real NumPy unicode ndarray.
+                    values = np.asarray(values, dtype="U")
+                return values
+            if hasattr(self, index):
+                return getattr(self, index)
         if isinstance(index, (list, str)):
             if len(index) == 0:
                 return_list = LineList(
@@ -263,10 +271,7 @@ class LineList(IPersist):
                 )
                 return_list.cdr_paras = self.cdr_paras
                 return return_list
-            values = self._lines[index].values
-            if index in self.string_columns:
-                values = values.astype(str)
-            return values
+            return self._lines[index].values
         else:
             if isinstance(index, int):
                 index = slice(index, index + 1)
@@ -279,7 +284,10 @@ class LineList(IPersist):
 
     def __getattribute__(self, name):
         if name[0] != "_" and name not in dir(self) and name in self._lines:
-            return self._lines[name].values
+            values = self._lines[name].values
+            if name in self.string_columns:
+                return np.asarray(values, dtype="U")
+            return values
         return super().__getattribute__(name)
 
     @property
@@ -315,7 +323,7 @@ class LineList(IPersist):
     @property
     def species(self):
         """list(str) of size (nlines,): Species name of each line"""
-        return self._lines["species"].values.astype("U")
+        return np.asarray(self._lines["species"].values, dtype="U")
 
     @property
     def lulande(self):
