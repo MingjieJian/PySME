@@ -1,4 +1,15 @@
-![Python application](https://github.com/MingjieJian/SME/workflows/Python%20application/badge.svg)
+## Archived Repository
+
+PySME has moved to the new canonical repository:
+
+<https://github.com/SpectroscopyMadeEasy/PySME>
+
+This repository (`PySME-legacy`) is now legacy/read-only.
+Please open new issues and pull requests in the new repository.
+
+---
+
+![Python application](https://github.com/SpectroscopyMadeEasy/PySME-legacy/workflows/Python%20application/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/pysme-astro/badge/?version=latest)](https://pysme-astro.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5547527.svg)](https://doi.org/10.5281/zenodo.5547527)
 
