@@ -1,11 +1,6 @@
 name: Python application
 
 on:
-  push:
-    branches: [develop, master]
-    tags: ["v*"]
-  pull_request:
-    branches: [develop, master]
   workflow_dispatch:
 
 jobs:
@@ -212,6 +207,14 @@ jobs:
           path: dist
 
       - name: Create GitHub Release
-        run: gh release create ${{ github.ref_name }} dist/* --repo ${{ github.repository }} --title "${{ github.ref_name }}"
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --repo "$REPO" --clobber
+          else
+            gh release create "$TAG" dist/* --repo "$REPO" --title "$TAG"
+          fi
         env:
           GH_TOKEN: ${{ github.token }}

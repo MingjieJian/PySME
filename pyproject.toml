@@ -48,9 +48,9 @@ classifiers = [
 ]
 
 [project.urls]
-"Bug Tracker" = "https://github.com/MingjieJian/SME/issues"
+"Bug Tracker" = "https://github.com/SpectroscopyMadeEasy/PySME-legacy/issues"
 "Documentation" = "https://pysme-astro.readthedocs.io/en/latest/"
-"Source Code"  = "https://github.com/MingjieJian/SME/"
+"Source Code"  = "https://github.com/SpectroscopyMadeEasy/PySME-legacy/"
 
 [project.optional-dependencies]
 dev = [
