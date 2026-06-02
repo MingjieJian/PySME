@@ -26,6 +26,18 @@ In 2018, we began began reimplmenting the IDL part of SME in python 3,
 adopting an object oriented paradigm and continuous itegration practices
 (code repository, build automation, self-testing, frequent builds).
 
+# SMElib source code
+
+PySME is the Python front-end for SME. The underlying SME C++/Fortran library
+(`SMElib`) lives in a separate repository:
+
+<https://github.com/SpectroscopyMadeEasy/SMElib>
+
+Most users do not need to download `SMElib` separately because supported PySME
+installations provide the compiled library. You may want the `SMElib` source
+code if you need to inspect the low-level implementation, debug the native
+library, or compile it manually for an unsupported platform.
+
 # Installation
 
 A stable version is available on pip `pip install pysme-astro`, and it is recommended to install this verion.

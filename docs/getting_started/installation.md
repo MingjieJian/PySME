@@ -4,11 +4,22 @@ PySME can be installed through PyPI (recommended; stable release) or from github
 
 ```{admonition} Supported environments:
 - Platforms: Linux, macOS (arm platform)
-    - The x86/Intel platform macOS is not supported anymore, but you can still install v0.6.23, the last supported PySME version, or download [SMElib](https://github.com/MingjieJian/SMElib) and compile it manually.
+    - The x86/Intel platform macOS is not supported anymore, but you can still install v0.6.23, the last supported PySME version, or download [SMElib](https://github.com/SpectroscopyMadeEasy/SMElib) and compile it manually.
 - Windows: supported via WSL2 (install/run PySME inside the Linux subsystem)
 - Python versions: 
     - 3.9–3.13.
 ```
+
+## Where is the SMElib source code?
+
+PySME is the Python interface to the underlying SME native library
+(`SMElib`), which is written in C++/Fortran and maintained in a separate
+repository:
+
+<https://github.com/SpectroscopyMadeEasy/SMElib>
+
+In most cases you do not need to download `SMElib` separately, because PySME
+ships or installs the compiled native library for supported platforms.
 
 ## Set up virtual environment
 

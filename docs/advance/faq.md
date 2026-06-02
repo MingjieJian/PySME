@@ -1,5 +1,13 @@
 # FAQ
 
+## Where is the SMElib source code?
+
+The SME native library (`SMElib`) is maintained in a separate repository:
+
+<https://github.com/SpectroscopyMadeEasy/SMElib>
+
+Most PySME users do not need it separately, but it is the right place to look
+if you want to inspect or compile the underlying C++/Fortran library.
 
 ## How do I change the default log file?
 
