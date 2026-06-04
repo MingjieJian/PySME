@@ -122,3 +122,33 @@ def test_long_format():
 
     assert isinstance(linelist.abund, Abund)
     assert isinstance(linelist.atmo, str)
+
+
+def test_save_reload_long_subset_updates_header(tmp_path):
+    linelist = ValdFile(join(dirname(__file__), "testcase3.lin"))
+    subset = linelist[:5]
+
+    path = tmp_path / "subset_long.lin"
+    subset.save(path, overwrite=True)
+    assert path.read_text().splitlines()[0].split(",")[2].strip() == "5"
+    assert "species_len" not in subset._lines.columns
+    reloaded = ValdFile(path)
+
+    assert len(reloaded) == len(subset)
+    assert reloaded.lineformat == "long"
+    assert np.allclose(reloaded.wlcent, subset.wlcent)
+
+
+def test_save_reload_short_subset_updates_header(tmp_path):
+    linelist = ValdFile(join(dirname(__file__), "testcase1.lin"))
+    subset = linelist[:5]
+
+    path = tmp_path / "subset_short.lin"
+    subset.save(path, overwrite=True)
+    assert path.read_text().splitlines()[0].split(",")[2].strip() == "5"
+    assert "species_len" not in subset._lines.columns
+    reloaded = ValdFile(path)
+
+    assert len(reloaded) == len(subset)
+    assert reloaded.lineformat == "short"
+    assert np.allclose(reloaded.wlcent, subset.wlcent)

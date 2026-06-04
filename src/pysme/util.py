@@ -25,7 +25,6 @@ from scipy.interpolate import RBFInterpolator
 from matplotlib.path import Path
 
 from . import __version__ as smeversion
-from .sme_synth import SME_DLL
 from .config import Config
 
 logger = logging.getLogger(__name__)
@@ -334,6 +333,8 @@ def safe_interpolation(x_old, y_old, x_new=None, fill_value=0):
 
 def log_version():
     """For Debug purposes"""
+    from .sme_synth import SME_DLL
+
     dll = SME_DLL()
     logger.debug("----------------------")
     logger.debug("Python version: %s", python_version())
@@ -930,6 +931,5 @@ def save_compressed_grid(mask_bits, unique_widths, codes, n_lines_total, out_pat
         codes=codes,
         n_lines_total=np.array(n_lines_total, dtype=np.int32)
     )
-
 
 

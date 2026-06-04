@@ -54,40 +54,9 @@ console.setFormatter(
 )
 logger.addHandler(console)
 
-# Download library if it does not exist
-import os.path
-from ctypes import cdll
-
-from .smelib import libtools
-
 # First-time setup, if not done.
 from .init_config import ensure_user_config
 ensure_user_config()
-
-libfile = libtools.get_full_libfile()
-if not os.path.exists(libfile):
-    smelib_dir = libtools.download_smelib()
-
-try:
-    cdll.LoadLibrary(libfile)
-    from .smelib import _smelib
-except OSError as e:
-    # macOS 上若报架构不匹配，自动下载所需架构并重试一次
-    msg = str(e)
-    if sys.platform == "darwin" and ("incompatible architecture" in msg or "mach-o file" in msg):
-        need = libtools._parse_needed_arch_from_error(msg)
-        print("Detected arch mismatch; need:", need)
-        libtools.download_smelib(force_arch=need)
-        try:
-            cdll.LoadLibrary(libfile)
-            from .smelib import _smelib
-        except Exception:
-            libtools.compile_interface()
-    else:
-        libtools.compile_interface()
-except Exception:
-    # 其它非 OSError 的情况（如 ImportError 等）
-    libtools.compile_interface()
 
 # Extract the 3DNLTE H line profiles
 config = Config()

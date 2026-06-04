@@ -160,7 +160,7 @@ class ValdFile(LineList):
         if isinstance(index, int):
             index = slice(index, index + 1)
         return_list = deepcopy(self)
-        return_list._lines = self._lines.iloc[index]
+        return_list._lines = self._lines.iloc[index].copy()
         return_list.nlines = len(return_list._lines)
         return return_list
 
@@ -291,12 +291,11 @@ class ValdFile(LineList):
         # if len(words) < 5 or words[5] != "Wavelength region":
         #     raise ValdError(f"{self.filename} is not a VALD line data file")
         try:
+            self._wavelo = float(words[0])
+            self._wavehi = float(words[1])
             self.nlines = int(words[2])
-            # self._wavelo = float(words[0])
-            # self._wavehi = float(words[1])
-            # self._nlines_proc = int(words[3])
-            # self._vmicro = float(words[4])
-            pass
+            self._nlines_proc = int(words[3])
+            self._vmicro = float(words[4])
         except:
             raise ValdError(f"{self.filename} is not a VALD line data file")
         return self.nlines
@@ -592,7 +591,19 @@ class ValdFile(LineList):
         list_save_content = []
         # Output the header
         if self.header != '':
-            list_save_content.append(self.header)
+            if len(self._lines) > 0:
+                wavelo = float(np.min(self._lines["wlcent"]))
+                wavehi = float(np.max(self._lines["wlcent"]))
+            else:
+                wavelo = float(getattr(self, "_wavelo", 0.0))
+                wavehi = float(getattr(self, "_wavehi", 0.0))
+
+            vmicro = float(getattr(self, "_vmicro", 0.0))
+            nlines = int(len(self._lines))
+            list_save_content.append(
+                f"{wavelo:11.4f}, {wavehi:10.4f},{nlines},{nlines},{vmicro:4.1f}, "
+                "Wavelength region, Lines selected, Lines processed, Vmicro\n"
+            )
         
         # 2. Output each line in wavelength 
         if self.lineformat == 'long':
@@ -609,23 +620,25 @@ class ValdFile(LineList):
             raise ValueError('VALD line format not recognized.')
         list_save_content.append(line_header)
 
-        self._lines['species_len'] = self._lines['species'].apply(len)
         if self.lineformat == 'long':
             if self.valdtype == 'extract_stellar':
                 def line_to_text(row):
-                    return f"'{row['species']}',{row['wlcent']:{21-row['species_len']}.5f},{row['gflog']:7.3f},{row['excit']:8.4f},{row['j_lo']:5.1f},{row['e_upp']:8.4f},{row['j_up']:5.1f},{row['lande_lower']:7.3f},{row['lande_upper']:7.3f},{row['lande']:7.3f},{row['gamrad']:6.3f},{row['gamqst']:6.3f},{row['gamvw']:6.3f},{row['depth']:6.3f},\n'  {row['couple_lower']}   {row['term_lower']:>83}'\n'  {row['couple_upper']}   {row['term_upper']:>83}'\n'{row['reference']}'" 
+                    width = 21 - len(row["species"])
+                    return f"'{row['species']}',{row['wlcent']:{width}.5f},{row['gflog']:7.3f},{row['excit']:8.4f},{row['j_lo']:5.1f},{row['e_upp']:8.4f},{row['j_up']:5.1f},{row['lande_lower']:7.3f},{row['lande_upper']:7.3f},{row['lande']:7.3f},{row['gamrad']:6.3f},{row['gamqst']:6.3f},{row['gamvw']:6.3f},{row['depth']:6.3f},\n'  {row['couple_lower']}   {row['term_lower']:>83}'\n'  {row['couple_upper']}   {row['term_upper']:>83}'\n'{row['reference']}'" 
             elif self.valdtype == 'extract_all':
                 def line_to_text(row):
-                    return f"'{row['species']}',{row['wlcent']:{20-row['species_len']}.5f},{row['gflog']:8.3f},{row['excit']:8.4f},{row['j_lo']:5.1f},{row['e_upp']:8.4f},{row['j_up']:5.1f},{row['lande_lower']:7.3f},{row['lande_upper']:7.3f},{row['lande']:7.3f},{row['gamrad']:6.3f},{row['gamqst']:6.3f},{row['gamvw']:6.3f},\n  {row['couple_lower']}   {row['term_lower']:>83}\n  {row['couple_upper']}   {row['term_upper']:>83}\n'{row['reference']}'" 
+                    width = 20 - len(row["species"])
+                    return f"'{row['species']}',{row['wlcent']:{width}.5f},{row['gflog']:8.3f},{row['excit']:8.4f},{row['j_lo']:5.1f},{row['e_upp']:8.4f},{row['j_up']:5.1f},{row['lande_lower']:7.3f},{row['lande_upper']:7.3f},{row['lande']:7.3f},{row['gamrad']:6.3f},{row['gamqst']:6.3f},{row['gamvw']:6.3f},\n  {row['couple_lower']}   {row['term_lower']:>83}\n  {row['couple_upper']}   {row['term_upper']:>83}\n'{row['reference']}'" 
         elif self.lineformat == 'short':
             if self.valdtype == 'extract_stellar':
                 def line_to_text(row):
-                    return f"'{row['species']}',{row['wlcent']:{21-row['species_len']}.5f},{row['excit']:8.4f},{row['vmic']:4.1f},{row['gflog']:7.3f},{row['gamrad']:6.3f},{row['gamqst']:6.3f},{row['gamvw']:6.3f},{row['lande']:7.3f},{row['depth']:6.3f}, '{row['reference']}'" 
+                    width = 21 - len(row["species"])
+                    return f"'{row['species']}',{row['wlcent']:{width}.5f},{row['excit']:8.4f},{row['vmic']:4.1f},{row['gflog']:7.3f},{row['gamrad']:6.3f},{row['gamqst']:6.3f},{row['gamvw']:6.3f},{row['lande']:7.3f},{row['depth']:6.3f}, '{row['reference']}'" 
             elif self.valdtype == 'extract_all':
                 def line_to_text(row):
-                    return f"'{row['species']}',{row['wlcent']:{20-row['species_len']}.5f},{row['excit']:9.3f},{row['gflog']:7.3f},{row['gamrad']:6.3f},{row['gamqst']:6.3f},{row['gamvw']:6.3f},{row['lande']:7.3f},'{row['reference']}'" 
+                    width = 20 - len(row["species"])
+                    return f"'{row['species']}',{row['wlcent']:{width}.5f},{row['excit']:9.3f},{row['gflog']:7.3f},{row['gamrad']:6.3f},{row['gamqst']:6.3f},{row['gamvw']:6.3f},{row['lande']:7.3f},'{row['reference']}'" 
         line_text = list(self._lines.apply(line_to_text, axis=1).values)
-        self._lines = self._lines.drop('species_len', axis=1)
         list_save_content += line_text
         
         # Only for extract_stellar: add model and abund

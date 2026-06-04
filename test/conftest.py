@@ -7,8 +7,6 @@ from scipy.constants import speed_of_light
 
 from pysme.abund import Abund
 from pysme.linelist.vald import ValdFile
-from pysme.sme import SME_Structure as SME_Struct
-from pysme.synthesize import synthesize_spectrum
 
 # TODO create various kinds of default sme structures
 # then run test on all of the relevant ones
@@ -16,12 +14,17 @@ from pysme.synthesize import synthesize_spectrum
 
 @pytest.fixture
 def sme_empty():
+    from pysme.sme import SME_Structure as SME_Struct
+
     sme = SME_Struct()
     return sme
 
 
 @pytest.fixture
 def testcase1():
+    from pysme.sme import SME_Structure as SME_Struct
+    from pysme.synthesize import synthesize_spectrum
+
     c_light = speed_of_light * 1e-3
 
     # TODO get better test case for this
@@ -53,6 +56,8 @@ def testcase1():
 
 @pytest.fixture
 def sme_2segments():
+    from pysme.sme import SME_Structure as SME_Struct
+
     cwd = dirname(__file__)
 
     sme = SME_Struct()
