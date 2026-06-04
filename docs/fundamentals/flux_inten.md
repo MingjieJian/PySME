@@ -13,6 +13,11 @@ the synthetic continuum:
 Even when this is `False`, continuum fitting can still be enabled through
 `cscale_flag`.
 
+This flag does not redefine what `cscale` means. `cscale` is still the
+multiplicative correction applied to the synthetic spectrum to match the
+observation. See [](continuum.md) for the interaction between
+`normalize_by_continuum`, `cscale`, and `cscale_type`.
+
 ## `specific_intensities_only`
 
 `specific_intensities_only` controls whether PySME returns angle-dependent

@@ -29,6 +29,7 @@ PySME has many options to determine them.
 
 - `cscale`: The polynomial parameters for each segment, that are applied to the synthetic spectrum to match the observation.
     - The polynomial is calculated using the wavelength grid of the observation, shifted so that the first point is 0. I.e. the polynomial is f(wave - wave[0]).
+    - This is usually best interpreted as a synthetic-to-observation correction, not automatically as the true observed-spectrum continuum.
 - `vrad`: The radial velocity in km/s that was applied to each segment of the synthethized spectrum to match the observation.
 - `cscale_flag`: Determines how the continuum is fitted, or if it is fitted at all.
     - none: No continuum correction
@@ -36,6 +37,12 @@ PySME has many options to determine them.
     - constant: scale everything by a factor
     - linear: First order polynomial, i.e. a straight line
     - quadratic: Second order polynomial
+- `cscale_type`: Determines how the correction is estimated.
+    - `mask`: fit from continuum-mask pixels
+    - `match`: fit by matching synthetic to observation over good pixels
+    - `match+mask`: match synthetic to observation over continuum-mask pixels
+    - `matchlines` / `matchlines+mask`: line-driven matching variants
+    - `spline` / `spline+mask`: spline-based matching variants
 - `vrad_flag`: Determines how the radial velocity is fitted, or if it is fitted at all.
     - none: No radial velocity fitting
     - fix: Use the set value for the radial velocity, but don't change it

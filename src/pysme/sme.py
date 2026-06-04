@@ -207,8 +207,14 @@ class SME_Structure(Parameters):
             This is used in combination with cscale_flag, which determines the degree of the fit, if any.
 
             allowed values are:
-              * "whole": Fit the whole synthetic spectrum to the observation to determine the best fit
               * "mask": Fit a polynomial to the pixels marked as continuum in the mask
+              * "match": Fit a multiplicative correction so the synthetic spectrum matches the observation
+              * "match+mask": Same as "match", but only using continuum-mask pixels
+              * "matchlines": Match mostly on line pixels rather than continuum pixels
+              * "matchlines+mask": Same as "matchlines", with continuum-mask restrictions
+              * "spline": Match using a spline instead of a low-order polynomial
+              * "spline+mask": Same as "spline", but only using continuum-mask pixels
+              * "mcmc": Joint MCMC continuum/radial-velocity fit
             """),
         ("cscale", None, this, this,
             """array of size (nseg, ndegree): Continumm polynomial coefficients for each wavelength segment
