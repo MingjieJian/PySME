@@ -4,9 +4,11 @@ from os.path import dirname, join
 import numpy as np
 import pytest
 
+import pysme.solve as solve_mod
+import pysme.synthesize as synth_mod
 from pysme.sme import SME_Structure as SME_Struct
 from pysme.solve import solve
-from pysme.synthesize import synthesize_spectrum
+from pysme.synthesize import Synthesizer, synthesize_spectrum
 
 
 cwd = dirname(__file__)
@@ -117,3 +119,158 @@ def test_line_precompute_database_separates_method_and_linelist_hash(tmp_path):
             linelist_mode="all",
             line_precompute_database=db,
         )
+
+
+class _StopLineSelect(RuntimeError):
+    pass
+
+
+class _FakeDll:
+    def SetLineInfoMode(self, mode):
+        self.mode = mode
+
+
+def test_cdr_update_uses_resolved_line_select_config(monkeypatch):
+    sme = _prepare_sme()
+    sme.line_select_method = "cdr"
+    sme.line_select_policy = "strict"
+    sme.line_select_recompute = "always"
+    sme.line_select_parallel = False
+    sme.line_select_n_jobs = 3
+    sme.line_select_chunk_size = 17
+    sme.line_select_cdr_strength_thres = 0.0123
+    sme.line_select_cdr_bin_width = 0.45
+    sme.cdr_parallel = True
+    sme.cdr_n_jobs = 99
+    sme.cdr_N_line_chunk = 2
+    sme.strong_depth_thres = 0.99
+    sme.strong_bin_width = 0.88
+
+    captured = {}
+
+    def fake_update_cdr(self, sme, **kwargs):
+        captured.update(kwargs)
+        raise _StopLineSelect
+
+    monkeypatch.setattr(Synthesizer, "update_cdr", fake_update_cdr)
+    synth = Synthesizer.__new__(Synthesizer)
+    synth.dll = _FakeDll()
+    synth.wint = {}
+    synth.known_sme = None
+    synth.update_cdr_switch = False
+
+    with pytest.raises(_StopLineSelect):
+        synth.synthesize_spectrum(sme, linelist_mode="all")
+
+    assert captured["chunk_size"] == 17
+    assert captured["parallel"] is False
+    assert captured["n_jobs"] == 3
+    assert np.isclose(sme.strong_depth_thres, 0.0123)
+    assert np.isclose(sme.strong_bin_width, 0.45)
+    assert sme.cdr_N_line_chunk == 17
+    assert sme.cdr_n_jobs == 3
+    assert sme.cdr_parallel is False
+
+
+def test_almax_update_uses_resolved_line_select_config(monkeypatch):
+    sme = _prepare_sme()
+    sme.line_select_method = "almax"
+    sme.line_select_policy = "strict"
+    sme.line_select_recompute = "always"
+    sme.line_select_parallel = False
+    sme.line_select_n_jobs = 4
+    sme.line_select_chunk_size = 19
+    sme.line_select_almax_threshold = 0.0042
+    sme.line_select_almax_use_bins = True
+    sme.line_select_almax_bin_width = 0.31
+    sme.cdr_parallel = True
+    sme.cdr_n_jobs = 77
+    sme.cdr_N_line_chunk = 5
+    sme.strong_bin_width = 0.91
+
+    captured = {}
+
+    def fake_update_almax(self, sme, **kwargs):
+        captured.update(kwargs)
+        raise _StopLineSelect
+
+    monkeypatch.setattr(Synthesizer, "update_almax", fake_update_almax)
+    synth = Synthesizer.__new__(Synthesizer)
+    synth.dll = _FakeDll()
+    synth.wint = {}
+    synth.known_sme = None
+    synth.update_cdr_switch = False
+
+    with pytest.raises(_StopLineSelect):
+        synth.synthesize_spectrum(sme, linelist_mode="all")
+
+    assert captured["chunk_size"] == 19
+    assert captured["parallel"] is False
+    assert captured["n_jobs"] == 4
+    assert np.isclose(captured["threshold"], 0.0042)
+    assert captured["use_bins"] is True
+    assert np.isclose(captured["bin_width"], 0.31)
+
+
+def test_line_select_reuse_is_deprecated(monkeypatch):
+    sme = _prepare_sme()
+    sme.line_select_method = "cdr"
+    sme.line_select_recompute = "always"
+    sme.line_select_reuse = "once"
+
+    def fake_update_cdr(self, sme, **kwargs):
+        raise _StopLineSelect
+
+    monkeypatch.setattr(Synthesizer, "update_cdr", fake_update_cdr)
+    synth = Synthesizer.__new__(Synthesizer)
+    synth.dll = _FakeDll()
+    synth.wint = {}
+    synth.known_sme = None
+    synth.update_cdr_switch = False
+
+    with pytest.deprecated_call(match="line_select_reuse"):
+        with pytest.raises(_StopLineSelect):
+            synth.synthesize_spectrum(sme, linelist_mode="all")
+
+
+def test_synthesize_aliases_cdr_database_to_line_precompute_database(monkeypatch):
+    sme = _prepare_sme()
+    captured = {}
+
+    class _FakeSynthesizer:
+        def __init__(self):
+            pass
+
+        def synthesize_spectrum(self, sme, segments="all", **kwargs):
+            captured.update(kwargs)
+            return sme
+
+    monkeypatch.setattr(synth_mod, "Synthesizer", _FakeSynthesizer)
+
+    with pytest.deprecated_call(match="cdr_database"):
+        synthesize_spectrum(sme, cdr_database="/tmp/cdr-cache")
+
+    assert captured["line_precompute_database"] == "/tmp/cdr-cache"
+    assert "cdr_database" not in captured or captured["cdr_database"] is None
+
+
+def test_solve_aliases_cdr_database_to_line_precompute_database(monkeypatch):
+    sme = _prepare_sme()
+    captured = {}
+
+    class _FakeSolver:
+        def __init__(self, filename=None, restore=False):
+            self.filename = filename
+            self.restore = restore
+
+        def solve(self, sme, param_names=None, segments="all", **kwargs):
+            captured.update(kwargs)
+            return sme
+
+    monkeypatch.setattr(solve_mod, "SME_Solver", _FakeSolver)
+
+    with pytest.deprecated_call(match="cdr_database"):
+        solve(sme, ["vrad"], cdr_database="/tmp/cdr-cache")
+
+    assert captured["line_precompute_database"] == "/tmp/cdr-cache"
+    assert "cdr_database" not in captured or captured["cdr_database"] is None

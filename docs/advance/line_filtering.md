@@ -29,10 +29,14 @@ When `linelist_mode="dynamic"`:
 
 This can significantly reduce runtime for long or segmented spectra.
 
+For a complete parameter-by-parameter reference, including deprecated aliases
+and recommended replacements, see [](line_selection_reference.md).
+
 ## Main Controls
 
 - Shared controls:
   - `sme.line_select_method`: `internal | cdr | almax`
+  - `sme.line_select_policy`: `auto | strict`
   - `sme.line_select_parallel`: enable/disable parallel metadata update
   - `sme.line_select_n_jobs`: number of worker processes
   - `sme.line_select_chunk_size`: chunk size for metadata update
@@ -50,7 +54,18 @@ This can significantly reduce runtime for long or segmented spectra.
 `line_precompute_database` is a shared on-disk cache for both `cdr` and
 `almax`. Cache entries are isolated by `(method, linelist_hash, stellar params)`,
 so one folder can safely store multiple linelists and both methods together.
-Legacy `cdr_database` is still accepted as an alias.
+Legacy `cdr_database` is still accepted as a deprecated alias.
+
+### Recompute vs. reuse
+
+- `line_select_recompute` controls whether line metadata is recomputed when it
+  is missing or stale:
+  - `if_stale`: recompute only when needed
+  - `always`: always recompute
+  - `never`: require existing metadata or cache entries
+- `line_select_reuse` is deprecated. Non-default values still enable a limited
+  internal reuse path by keeping line opacity around, but this is not a fully
+  developed cache policy and should not be treated as a stable public API.
 
 ### ALMAX strong-line rule
 
@@ -62,6 +77,9 @@ Legacy `cdr_database` is still accepted as an alias.
 `line_select_almax_threshold` is the single ALMAX threshold parameter for both
 rules. If it is `None`, it falls back to `sme.accrt` (legacy-compatible
 behavior).
+
+CDR does not have a separate `use_bins` switch because its current strong-line
+selection already uses the bin-based helper internally.
 
 ## Example 1: Dynamic Filtering in Synthesis (CDR)
 

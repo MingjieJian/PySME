@@ -126,9 +126,19 @@ def _same_path(a, b):
     )
 
 
-def _resolve_line_precompute_database(sme, line_precompute_database=None, cdr_database=None):
-    if line_precompute_database is False:
-        return None
+def _normalize_line_precompute_database_arg(
+    line_precompute_database=None,
+    cdr_database=None,
+    *,
+    stacklevel=3,
+):
+    if cdr_database is not None:
+        warnings.warn(
+            "'cdr_database' is deprecated and will be removed in a future release; "
+            "use 'line_precompute_database' instead.",
+            DeprecationWarning,
+            stacklevel=stacklevel,
+        )
     if (
         line_precompute_database is not None
         and cdr_database is not None
@@ -140,8 +150,19 @@ def _resolve_line_precompute_database(sme, line_precompute_database=None, cdr_da
         )
     if line_precompute_database is not None:
         return line_precompute_database
-    if cdr_database is not None:
-        return cdr_database
+    return cdr_database
+
+
+def _resolve_line_precompute_database(sme, line_precompute_database=None, cdr_database=None):
+    if line_precompute_database is False:
+        return None
+    line_precompute_database = _normalize_line_precompute_database_arg(
+        line_precompute_database=line_precompute_database,
+        cdr_database=cdr_database,
+        stacklevel=4,
+    )
+    if line_precompute_database is not None:
+        return line_precompute_database
     if getattr(sme, "line_precompute_database", None) is not None:
         return getattr(sme, "line_precompute_database")
     return getattr(sme, "line_select_cdr_database", None)
@@ -766,6 +787,13 @@ class Synthesizer:
             raise ValueError("line_select_recompute must be one of: 'if_stale', 'always', 'never'")
         if reuse not in ("none", "once", "always"):
             raise ValueError("line_select_reuse must be one of: 'none', 'once', 'always'")
+        if reuse != "none":
+            warnings.warn(
+                "'line_select_reuse' is deprecated and will be removed in a future release. "
+                "Its current effect is limited; prefer keeping the default 'none'.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
         if linelist_mode == "dynamic" and method == "internal":
             raise ValueError("linelist_mode='dynamic' requires line_select_method 'cdr' or 'almax'")
 
@@ -855,6 +883,7 @@ class Synthesizer:
             "parallel": parallel,
             "n_jobs": n_jobs,
             "chunk_size": chunk_size,
+            "worker_output": bool(getattr(sme, "cdr_pysme_out", False)),
             "recompute": recompute,
             "reuse": reuse,
             "stale_thres": stale_thres,
@@ -872,6 +901,10 @@ class Synthesizer:
         threshold=None,
         use_bins=None,
         bin_width=None,
+        chunk_size=None,
+        parallel=None,
+        n_jobs=None,
+        worker_output=None,
         line_precompute_database=None,
         cdr_database=None,
         cdr_create=False,
@@ -886,18 +919,19 @@ class Synthesizer:
         'almax_ratio', 'strong', 'line_range_s', 'line_range_e'.
         """
 
-        chunk_size = int(
-            max(
-                1,
-                getattr(
-                    sme,
-                    "line_select_chunk_size",
-                    getattr(sme, "cdr_N_line_chunk", 2000),
-                ),
+        if chunk_size is None:
+            chunk_size = getattr(
+                sme,
+                "line_select_chunk_size",
+                getattr(sme, "cdr_N_line_chunk", 2000),
             )
-        )
-        parallel = bool(getattr(sme, "line_select_parallel", False))
-        n_jobs = getattr(sme, "line_select_n_jobs", None)
+        chunk_size = int(max(1, chunk_size))
+        if parallel is None:
+            parallel = bool(getattr(sme, "line_select_parallel", False))
+        else:
+            parallel = bool(parallel)
+        if n_jobs is None:
+            n_jobs = getattr(sme, "line_select_n_jobs", None)
         if n_jobs is None:
             n_jobs = int(
                 min(
@@ -908,6 +942,10 @@ class Synthesizer:
         n_jobs = int(max(1, n_jobs))
         if n_jobs < 2:
             parallel = False
+        if worker_output is None:
+            worker_output = bool(getattr(sme, "cdr_pysme_out", False))
+        else:
+            worker_output = bool(worker_output)
 
         if threshold is None:
             threshold = getattr(sme, "line_select_almax_threshold", None)
@@ -993,7 +1031,7 @@ class Synthesizer:
                 one.linelist = sub_linelist[i]
                 sub_sme.append(one)
 
-            if getattr(sme, "cdr_pysme_out", False):
+            if worker_output:
                 results = pqdm(
                     sub_sme,
                     _compute_almax_lineinfo_for_sme,
@@ -1147,6 +1185,12 @@ class Synthesizer:
         sme : SME_Struct
             same sme structure with synthetic spectrum in sme.smod
         """
+        line_precompute_database = _normalize_line_precompute_database_arg(
+            line_precompute_database=line_precompute_database,
+            cdr_database=cdr_database,
+            stacklevel=3,
+        )
+        cdr_database = None
 
         # Prepare 3D NLTE H profile corrections
         if sme.tdnlte_H:
@@ -1269,6 +1313,10 @@ class Synthesizer:
                 try:
                     sme = self.update_cdr(
                         sme,
+                        chunk_size=ls_cfg["chunk_size"],
+                        parallel=ls_cfg["parallel"],
+                        n_jobs=ls_cfg["n_jobs"],
+                        worker_output=ls_cfg["worker_output"],
                         line_precompute_database=line_precompute_database,
                         cdr_database=cdr_database,
                         cdr_create=cdr_create,
@@ -1375,6 +1423,10 @@ class Synthesizer:
                         threshold=ls_cfg["almax_threshold"],
                         use_bins=ls_cfg["almax_use_bins"],
                         bin_width=ls_cfg["almax_bin_width"],
+                        chunk_size=ls_cfg["chunk_size"],
+                        parallel=ls_cfg["parallel"],
+                        n_jobs=ls_cfg["n_jobs"],
+                        worker_output=ls_cfg["worker_output"],
                         line_precompute_database=line_precompute_database,
                         cdr_database=cdr_database,
                         cdr_create=cdr_create,
@@ -1811,6 +1863,10 @@ class Synthesizer:
     def update_cdr(
         self,
         sme,
+        chunk_size=None,
+        parallel=None,
+        n_jobs=None,
+        worker_output=None,
         line_precompute_database=None,
         cdr_database=None,
         cdr_create=False,
@@ -1825,7 +1881,38 @@ class Synthesizer:
         Author: Mingjie Jian
         '''
 
-        N_line_chunk, parallel, n_jobs, pysme_out = sme.cdr_N_line_chunk, sme.cdr_parallel, sme.cdr_n_jobs, sme.cdr_pysme_out
+        if chunk_size is None:
+            chunk_size = getattr(
+                sme,
+                "line_select_chunk_size",
+                getattr(sme, "cdr_N_line_chunk", 2000),
+            )
+        N_line_chunk = int(max(1, chunk_size))
+        if parallel is None:
+            parallel = bool(
+                getattr(sme, "line_select_parallel", getattr(sme, "cdr_parallel", False))
+            )
+        else:
+            parallel = bool(parallel)
+        if n_jobs is None:
+            n_jobs = getattr(sme, "line_select_n_jobs", getattr(sme, "cdr_n_jobs", None))
+        if n_jobs is None:
+            if parallel:
+                n_jobs = int(
+                    min(
+                        os.cpu_count() or 1,
+                        int(np.ceil(max(1, len(sme.linelist)) / N_line_chunk)),
+                    )
+                )
+            else:
+                n_jobs = 1
+        n_jobs = int(max(1, n_jobs))
+        if n_jobs < 2:
+            parallel = False
+        if worker_output is None:
+            pysme_out = bool(getattr(sme, "cdr_pysme_out", False))
+        else:
+            pysme_out = bool(worker_output)
         self.update_cdr_switch = True
         try:
             line_precompute_database = _resolve_line_precompute_database(
@@ -2599,5 +2686,12 @@ class Synthesizer:
     #     return [sme_H_only_res.wave[0], correction_all, sint_all, cint_all, sme_H_only_res.synth[0]]
 
 def synthesize_spectrum(sme, segments="all",**args):
+    if "cdr_database" in args:
+        args["line_precompute_database"] = _normalize_line_precompute_database_arg(
+            line_precompute_database=args.get("line_precompute_database"),
+            cdr_database=args.get("cdr_database"),
+            stacklevel=2,
+        )
+        args["cdr_database"] = None
     synthesizer = Synthesizer()
     return synthesizer.synthesize_spectrum(sme, segments, **args)

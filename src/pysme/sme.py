@@ -322,7 +322,7 @@ class SME_Structure(Parameters):
             "vmic": 1.0,
             "accrt": 0.0,
         }
-        self.line_select_reuse = "none"  # none | once | always
+        self.line_select_reuse = "none"  # deprecated; non-default values only have limited effect
         self.line_select_cdr_bin_width = 0.2
         self.line_select_cdr_strength_thres = 0.001
         self.line_precompute_database = None

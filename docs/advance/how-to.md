@@ -281,13 +281,22 @@ Removing the `linelist_mode` variable or changing it to `all` falls back to the 
 
 ## Unified line-selection controls (CDR and ALMAX)
 
+For the full parameter reference, including deprecated aliases and migration
+guidance, see [](line_selection_reference.md).
+
 Current PySME exposes a unified interface for external line selection:
 
 - `sme.line_select_method`: `internal | cdr | almax`
+- `sme.line_select_policy`: `auto | strict`
 - `sme.line_select_parallel`: enable/disable parallel metadata update
 - `sme.line_select_n_jobs`: worker count for parallel updates
 - `sme.line_select_chunk_size`: chunk size for metadata updates
 - `sme.line_select_recompute`: `if_stale | always | never`
+
+`line_select_recompute` decides whether line metadata is recomputed when it is
+missing or stale. `line_select_reuse` is deprecated; non-default values only
+trigger a limited internal reuse path and should not be treated as a stable
+public caching policy.
 
 ALMAX mode supports two strong-line rules:
 
@@ -302,6 +311,9 @@ Both ALMAX rules use the same threshold parameter:
 
 If `sme.line_select_almax_threshold` is `None`, it falls back to `sme.accrt`
 to preserve legacy behavior.
+
+CDR currently uses the bin-based strong-line helper directly, so there is no
+separate `cdr_use_bins` switch.
 
 Example:
 

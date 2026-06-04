@@ -25,7 +25,7 @@ from .atmosphere.savfile import SavFile
 from .large_file_storage import setup_lfs
 from .nlte import DirectAccessFile
 from .sme import MASK_VALUES
-from .synthesize import Synthesizer
+from .synthesize import Synthesizer, _normalize_line_precompute_database_arg
 from .util import print_to_log, show_progress_bars
 
 # # Debug usage
@@ -733,6 +733,12 @@ class SME_Solver:
                 stacklevel=2,
             )
         self.derived_param = derived_param if derived_param is not None else dynamic_param
+        line_precompute_database = _normalize_line_precompute_database_arg(
+            line_precompute_database=line_precompute_database,
+            cdr_database=cdr_database,
+            stacklevel=2,
+        )
+        cdr_database = None
 
         if self.restore and self.filename is not None:
             fname = self.filename.rsplit(".", 1)[0]
@@ -928,6 +934,13 @@ def solve(
     dynamic_param=None,
     **kwargs,
 ):
+    if "cdr_database" in kwargs:
+        kwargs["line_precompute_database"] = _normalize_line_precompute_database_arg(
+            line_precompute_database=kwargs.get("line_precompute_database"),
+            cdr_database=kwargs.get("cdr_database"),
+            stacklevel=2,
+        )
+        kwargs["cdr_database"] = None
     solver = SME_Solver(filename=filename, restore=restore)
     return solver.solve(
         sme,
