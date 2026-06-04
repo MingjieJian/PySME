@@ -32,6 +32,21 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
+      - name: Cache PySME NLTE data
+        uses: actions/cache@v4
+        with:
+          path: ~/.sme/nlte_grids
+          key: pysme-nlte-h-v1-${{ runner.os }}-${{ matrix.python-version }}
+          restore-keys: |
+            pysme-nlte-h-v1-${{ runner.os }}-
+
+      - name: Prefetch H NLTE grid
+        run: |
+          python - <<'PY'
+          from pysme.large_file_storage import setup_nlte
+          setup_nlte().get("nlte_H_pysme.grd")
+          PY
+
       - name: Run pytest
         run: |
           pytest
@@ -86,6 +101,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
+
+      - name: Cache PySME NLTE data
+        uses: actions/cache@v4
+        with:
+          path: ~/.sme/nlte_grids
+          key: pysme-nlte-h-v1-${{ runner.os }}-${{ matrix.python-version }}
+          restore-keys: |
+            pysme-nlte-h-v1-${{ runner.os }}-
+
+      - name: Prefetch H NLTE grid
+        run: |
+          python - <<'PY'
+          from pysme.large_file_storage import setup_nlte
+          setup_nlte().get("nlte_H_pysme.grd")
+          PY
 
       - name: Run pytest
         run: |
