@@ -129,6 +129,33 @@ class _FakeDll:
     def SetLineInfoMode(self, mode):
         self.mode = mode
 
+    def SetLibraryPath(self):
+        pass
+
+    def InputLineList(self, linelist):
+        raise _StopLineSelect
+
+
+def _make_minimal_cdr_ready_linelist(sme):
+    nlines = len(sme.linelist)
+    sme.linelist._lines["central_depth"] = np.full(nlines, 0.02)
+    wl = np.asarray(sme.linelist["wlcent"], dtype=float)
+    sme.linelist._lines["line_range_s"] = wl - 0.05
+    sme.linelist._lines["line_range_e"] = wl + 0.05
+    sme.linelist._lines["strong"] = np.ones(nlines, dtype=bool)
+    sme.linelist.cdr_paras = np.array([sme.teff, sme.logg, sme.monh, sme.vmic], dtype=float)
+    sme.linelist.cdr_paras_thres["strong_depth"] = 0.001
+    sme.linelist.cdr_paras_thres["strong_bin_width"] = 0.2
+
+
+def _make_minimal_synth():
+    synth = Synthesizer.__new__(Synthesizer)
+    synth.dll = _FakeDll()
+    synth.wint = {}
+    synth.known_sme = None
+    synth.update_cdr_switch = False
+    return synth
+
 
 def test_cdr_update_uses_resolved_line_select_config(monkeypatch):
     sme = _prepare_sme()
@@ -231,6 +258,65 @@ def test_line_select_reuse_is_deprecated(monkeypatch):
     with pytest.deprecated_call(match="line_select_reuse"):
         with pytest.raises(_StopLineSelect):
             synth.synthesize_spectrum(sme, linelist_mode="all")
+
+
+def test_jacobian_scale_parameter_shift_within_stale_threshold_does_not_recompute_cdr(monkeypatch):
+    sme = _prepare_sme()
+    sme.line_select_method = "cdr"
+    sme.line_select_policy = "strict"
+    sme.line_select_recompute = "if_stale"
+    sme.line_select_parallel = False
+    sme.line_select_cdr_strength_thres = 0.001
+    sme.line_select_cdr_bin_width = 0.2
+    _make_minimal_cdr_ready_linelist(sme)
+
+    # Small Jacobian-like perturbation: well within default stale thresholds.
+    sme.teff += 10.0
+    sme.logg += 0.01
+    sme.monh += 0.01
+    sme.vmic += 0.05
+
+    called = {"count": 0}
+
+    def fake_update_cdr(self, sme, **kwargs):
+        called["count"] += 1
+        raise AssertionError("update_cdr should not be called for in-threshold Jacobian perturbations")
+
+    monkeypatch.setattr(Synthesizer, "update_cdr", fake_update_cdr)
+    synth = _make_minimal_synth()
+
+    with pytest.raises(_StopLineSelect):
+        synth.synthesize_spectrum(sme, linelist_mode="all", updateStructure=False)
+
+    assert called["count"] == 0
+
+
+def test_jacobian_scale_parameter_shift_beyond_stale_threshold_recomputes_cdr(monkeypatch):
+    sme = _prepare_sme()
+    sme.line_select_method = "cdr"
+    sme.line_select_policy = "strict"
+    sme.line_select_recompute = "if_stale"
+    sme.line_select_parallel = False
+    sme.line_select_cdr_strength_thres = 0.001
+    sme.line_select_cdr_bin_width = 0.2
+    _make_minimal_cdr_ready_linelist(sme)
+
+    # Large perturbation: exceeds default Teff stale threshold of 250 K.
+    sme.teff += 300.0
+
+    called = {"count": 0}
+
+    def fake_update_cdr(self, sme, **kwargs):
+        called["count"] += 1
+        raise _StopLineSelect
+
+    monkeypatch.setattr(Synthesizer, "update_cdr", fake_update_cdr)
+    synth = _make_minimal_synth()
+
+    with pytest.raises(_StopLineSelect):
+        synth.synthesize_spectrum(sme, linelist_mode="all", updateStructure=False)
+
+    assert called["count"] == 1
 
 
 def test_synthesize_aliases_cdr_database_to_line_precompute_database(monkeypatch):
