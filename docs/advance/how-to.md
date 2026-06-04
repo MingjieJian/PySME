@@ -2,6 +2,41 @@
 
 This page describes some new (and in testing) function of PySME.
 
+## How to control PySME logging
+
+PySME uses the standard Python `logging` module.
+
+By default, the PySME console logger level is `WARNING`. This means that:
+
+- `WARNING` and `ERROR` messages are shown in the terminal by default
+- `INFO` and `DEBUG` messages are hidden by default
+- Python warnings still appear through the normal warnings system
+
+If you want more verbose terminal output, change both the PySME logger and the
+console handler:
+
+```py
+import logging
+import pysme
+
+pysme.logger.setLevel(logging.INFO)
+pysme.console.setLevel(logging.INFO)
+```
+
+For the most detailed output, use `logging.DEBUG` instead of `logging.INFO`.
+
+If you want to save logs to a file, use:
+
+```py
+from pysme import util
+
+util.start_logging("pysme.log", level="INFO")
+```
+
+This adds a file handler and sets the PySME logger level. If you also want
+`INFO` or `DEBUG` messages to appear in the terminal, keep the `pysme.console`
+change above as well.
+
 ## How to get the atmosphere grid
 
 ```py

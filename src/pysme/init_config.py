@@ -1,6 +1,9 @@
 import json, os
+import logging
 from os.path import dirname, exists, expanduser, join
 from shutil import copy
+
+logger = logging.getLogger(__name__)
 
 def ensure_user_config():
     # Create folder structure for config files
@@ -21,7 +24,7 @@ def ensure_user_config():
 
     # Create config file if it does not exist
     if not exists(conf):
-        print('Create config file')
+        logger.info("Creating default PySME user config at %s", conf)
         # Hardcode default settings?
         config_filepath = join(dirname(__file__), "config_default.json")
         copy(config_filepath, conf)
@@ -30,13 +33,13 @@ def ensure_user_config():
 
     # Copy datafile pointers, for use in the GUI
     if not exists(expanduser(f"~/.sme/datafiles_atmospheres.json")):
-        print("Copy references to datafiles for atmospheres to config directory")
+        logger.info("Copying atmosphere datafile references into ~/.sme")
         copy(
             join(dirname(__file__), "datafiles_atmospheres.json"),
             expanduser(f"~/.sme/datafiles_atmospheres.json"),
         )
     if not exists(expanduser(f"~/.sme/datafiles_nlte.json")):
-        print("Copy references to datafiles for nlte to config directory")
+        logger.info("Copying NLTE datafile references into ~/.sme")
         copy(
             join(dirname(__file__), "datafiles_nlte.json"),
             expanduser(f"~/.sme/datafiles_nlte.json"),

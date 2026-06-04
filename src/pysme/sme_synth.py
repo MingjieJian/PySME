@@ -37,7 +37,10 @@ def ensure_smelib_ready(libfile=None):
             "incompatible architecture" in msg or "mach-o file" in msg
         ):
             need = _parse_needed_arch_from_error(msg)
-            print("Detected arch mismatch; error says need:", need or "(unknown)")
+            logger.warning(
+                "Detected SMElib architecture mismatch; required architecture: %s",
+                need or "(unknown)",
+            )
             if need is not None:
                 download_smelib(force_arch=need)
                 libtools.compile_interface()

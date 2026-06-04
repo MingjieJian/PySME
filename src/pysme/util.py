@@ -12,6 +12,7 @@ import logging
 import os
 import subprocess
 import sys
+import warnings
 from functools import wraps
 from platform import python_version
 
@@ -30,6 +31,7 @@ from .config import Config
 logger = logging.getLogger(__name__)
 show_progress_bars = False
 
+
 def disable_progress_bars():
     global show_progress_bars
     show_progress_bars = False
@@ -38,6 +40,20 @@ def disable_progress_bars():
 def enable_progress_bars():
     global show_progress_bars
     show_progress_bars = True
+
+
+def warn_with_log(
+    message,
+    *,
+    category=UserWarning,
+    stacklevel=2,
+    logger_obj=None,
+    level=logging.WARNING,
+):
+    """Emit a Python warning and mirror it to the configured logger."""
+    active_logger = logger if logger_obj is None else logger_obj
+    active_logger.log(level, "%s", message)
+    warnings.warn(message, category=category, stacklevel=stacklevel)
 
 
 @contextlib.contextmanager
@@ -931,5 +947,4 @@ def save_compressed_grid(mask_bits, unique_widths, codes, n_lines_total, out_pat
         codes=codes,
         n_lines_total=np.array(n_lines_total, dtype=np.int32)
     )
-
 

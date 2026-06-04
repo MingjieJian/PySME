@@ -26,7 +26,7 @@ from .large_file_storage import setup_lfs
 from .nlte import DirectAccessFile
 from .sme import MASK_VALUES
 from .synthesize import Synthesizer, _normalize_line_precompute_database_arg
-from .util import print_to_log, show_progress_bars
+from .util import print_to_log, show_progress_bars, warn_with_log
 
 # # Debug usage
 # from memory_profiler import profile
@@ -35,6 +35,17 @@ logger = logging.getLogger(__name__)
 
 clight = speed_of_light * 1e-3  # km/s
 warnings.filterwarnings("ignore", category=OptimizeWarning)
+
+
+def _format_parameter_state(names, values):
+    parts = []
+    for name, value in zip(names, values):
+        arr = np.asarray(value)
+        if arr.ndim == 0:
+            parts.append(f"{name}={float(arr):.4f}")
+        else:
+            parts.append(f"{name}={arr}")
+    return ", ".join(parts)
 
 
 class VariableNumber(np.lib.mixins.NDArrayOperatorsMixin):
@@ -203,10 +214,14 @@ class SME_Solver:
                 if "abund" in name:
                     abund_name = name.split()[1]
                     sme.abund[abund_name] = self.derived_param[name](sme) - sme.monh
-                    print(f"Changing derived parameter {name} to {sme.abund[abund_name]:.2f}.")
+                    logger.debug(
+                        "Updated derived parameter %s=%.2f",
+                        name,
+                        sme.abund[abund_name],
+                    )
                 else:
                     sme[name] = self.derived_param[name](sme)
-                    print(f"Changing derived parameter {name} to {sme[name]:.2f}.")
+                    logger.debug("Updated derived parameter %s=%.2f", name, sme[name])
         # run spectral synthesis
         try:
             result = self.synthesizer.synthesize_spectrum(
@@ -260,7 +275,11 @@ class SME_Solver:
             # Save result for jacobian
             self._latest_residual = resid
             self.iteration += 1
-        logger.debug("%s", {n: f"{v:.3f}" for n, v in zip(self.parameter_names, param)})
+        if self.parameter_names:
+            logger.debug(
+                "Current fit parameters: %s",
+                _format_parameter_state(self.parameter_names, param),
+            )
 
         # Also save intermediary results, because we can
         if save:
@@ -727,9 +746,10 @@ class SME_Solver:
         if derived_param is not None and dynamic_param is not None and derived_param is not dynamic_param:
             raise ValueError("Specify only one of derived_param or dynamic_param, not both.")
         if dynamic_param is not None:
-            warnings.warn(
+            warn_with_log(
                 "'dynamic_param' is deprecated and will be removed in a future release; use 'derived_param' instead.",
-                DeprecationWarning,
+                category=DeprecationWarning,
+                logger_obj=logger,
                 stacklevel=2,
             )
         self.derived_param = derived_param if derived_param is not None else dynamic_param
@@ -893,11 +913,12 @@ class SME_Solver:
             sme = self.update_fitresults(sme, res, segments)
             logger.debug("Reduced chi square: %.3f", sme.fitresults.chisq)
             try:
+                logger.info("Fit results:")
                 for name, value, unc in zip(
                     self.parameter_names, res.x, sme.fitresults.fit_uncertainties
                 ):
-                    logger.info("%s\t%.5f +- %.5g", name.ljust(10), value, unc)
-                logger.info("%s\t%s +- %s", "vrad".ljust(10), sme.vrad, sme.vrad_unc)
+                    logger.info("  %-10s %.5f +- %.5g", name, value, unc)
+                logger.info("  %-10s %s +- %s", "vrad", sme.vrad, sme.vrad_unc)
             except:
                 pass
         elif len(param_names) > 0:

@@ -45,10 +45,10 @@ class TqdmLoggingHandler(logging.Handler):
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 console = TqdmLoggingHandler()
-console.setLevel(logging.INFO)
+console.setLevel(logging.WARNING)
 console.setFormatter(
     colorlog.ColoredFormatter("%(log_color)s%(levelname)s - %(message)s")
 )

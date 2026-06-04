@@ -67,7 +67,7 @@ class LargeFileStorage:
         self.PKGNAME = ''
         
         if not cache_path.exists():
-            print('folder to store data file does not exist, creating')
+            logger.info("LargeFileStorage cache directory does not exist; creating %s", cache_path)
         cache_path.mkdir(parents=True, exist_ok=True)
 
     @staticmethod

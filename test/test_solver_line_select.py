@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 from os.path import dirname, join
 
 import numpy as np
@@ -134,6 +135,14 @@ class _FakeDll:
 
     def InputLineList(self, linelist):
         raise _StopLineSelect
+
+
+class _DummyProgressBar:
+    def __init__(self):
+        self.total = 0
+
+    def update(self, n=1):
+        return None
 
 
 def _make_minimal_cdr_ready_linelist(sme):
@@ -360,3 +369,73 @@ def test_solve_aliases_cdr_database_to_line_precompute_database(monkeypatch):
 
     assert captured["line_precompute_database"] == "/tmp/cdr-cache"
     assert "cdr_database" not in captured or captured["cdr_database"] is None
+
+
+def test_residuals_logs_derived_parameter_updates_without_print(monkeypatch, caplog):
+    sme = _prepare_sme()
+    spec = np.asarray(sme.spec[0], dtype=float)
+    uncs = np.ones_like(spec)
+    mask = np.ones_like(spec, dtype=bool)
+
+    def fail_print(*args, **kwargs):
+        raise AssertionError("derived parameter updates should use logger, not print")
+
+    class _FakeSynth:
+        def synthesize_spectrum(self, sme, **kwargs):
+            return None, np.asarray([spec]), None
+
+    monkeypatch.setattr("builtins.print", fail_print)
+
+    solver = solve_mod.SME_Solver.__new__(solve_mod.SME_Solver)
+    solver.synthesizer = _FakeSynth()
+    solver.filename = None
+    solver.iteration = 0
+    solver.parameter_names = []
+    solver.update_linelist = False
+    solver.derived_param = {
+        "vmic": lambda current_sme: 1.23,
+        "abund Fe": lambda current_sme: current_sme.monh + 7.45,
+    }
+    solver.progressbar = _DummyProgressBar()
+    solver.progressbar_jacobian = _DummyProgressBar()
+
+    with caplog.at_level(logging.DEBUG, logger=solve_mod.__name__):
+        resid = solver._residuals(
+            np.array([]),
+            sme,
+            spec,
+            uncs,
+            None,
+            segments=np.array([0]),
+            isJacobian=True,
+        )
+
+    assert resid.shape == spec.shape
+    messages = [record.getMessage() for record in caplog.records]
+    assert any("Updated derived parameter vmic=1.23" in msg for msg in messages)
+    assert any("Updated derived parameter abund Fe=" in msg for msg in messages)
+
+
+def test_cdr_recompute_logs_once(monkeypatch, caplog):
+    sme = _prepare_sme()
+    sme.line_select_method = "cdr"
+    sme.line_select_policy = "strict"
+    sme.line_select_recompute = "always"
+    sme.line_select_parallel = False
+
+    def fake_update_cdr(self, sme, **kwargs):
+        logging.getLogger(synth_mod.__name__).info(
+            "[cdr] Using calculation to update central depth and line range."
+        )
+        raise _StopLineSelect
+
+    monkeypatch.setattr(Synthesizer, "update_cdr", fake_update_cdr)
+    synth = _make_minimal_synth()
+
+    with caplog.at_level(logging.INFO, logger=synth_mod.__name__):
+        with pytest.raises(_StopLineSelect):
+            synth.synthesize_spectrum(sme, linelist_mode="all")
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert messages.count("[cdr] Using calculation to update central depth and line range.") == 1
+    assert "Updating linelist central depth and line range." not in messages

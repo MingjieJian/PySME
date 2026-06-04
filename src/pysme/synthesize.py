@@ -26,7 +26,13 @@ from .iliffe_vector import Iliffe_vector
 from .large_file_storage import setup_lfs
 from .sme import MASK_VALUES
 from .sme_synth import SME_DLL
-from .util import show_progress_bars, boundary_vertices, safe_interpolation, interpolate_3DNLTEH_spectrum_RBF
+from .util import (
+    show_progress_bars,
+    boundary_vertices,
+    safe_interpolation,
+    interpolate_3DNLTEH_spectrum_RBF,
+    warn_with_log,
+)
 from . import util
 from .sme import SME_Structure
 
@@ -133,10 +139,11 @@ def _normalize_line_precompute_database_arg(
     stacklevel=3,
 ):
     if cdr_database is not None:
-        warnings.warn(
+        warn_with_log(
             "'cdr_database' is deprecated and will be removed in a future release; "
             "use 'line_precompute_database' instead.",
-            DeprecationWarning,
+            category=DeprecationWarning,
+            logger_obj=logger,
             stacklevel=stacklevel,
         )
     if (
@@ -788,10 +795,11 @@ class Synthesizer:
         if reuse not in ("none", "once", "always"):
             raise ValueError("line_select_reuse must be one of: 'none', 'once', 'always'")
         if reuse != "none":
-            warnings.warn(
+            warn_with_log(
                 "'line_select_reuse' is deprecated and will be removed in a future release. "
                 "Its current effect is limited; prefer keeping the default 'none'.",
-                DeprecationWarning,
+                category=DeprecationWarning,
+                logger_obj=logger,
                 stacklevel=3,
             )
         if linelist_mode == "dynamic" and method == "internal":
@@ -1247,9 +1255,10 @@ class Synthesizer:
 
         dll = self.get_dll(dll_id)
         if linelist_mode == "auto":
-            warnings.warn(
+            warn_with_log(
                 "'linelist_mode=\"auto\"' is deprecated; use 'linelist_mode=\"dynamic\"' instead.",
-                DeprecationWarning,
+                category=DeprecationWarning,
+                logger_obj=logger,
                 stacklevel=2,
             )
         ls_cfg = self._resolve_line_select_config(
@@ -1308,7 +1317,16 @@ class Synthesizer:
                 need_update_cdr = True
 
             if need_update_cdr:
-                logger.info("Updating linelist central depth and line range.")
+                reasons = []
+                if not has_cols:
+                    reasons.append("missing line-info columns")
+                if stale_model:
+                    reasons.append("stale stellar parameters")
+                if cdr_create:
+                    reasons.append("cdr_create=True")
+                if ls_cfg["recompute"] == "always":
+                    reasons.append("recompute=always")
+                logger.debug("CDR recompute triggered (%s)", ", ".join(reasons))
                 allow_compute = ls_cfg["recompute"] != "never"
                 try:
                     sme = self.update_cdr(

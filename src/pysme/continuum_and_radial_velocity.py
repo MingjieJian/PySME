@@ -21,7 +21,7 @@ from pysme.util import disable_progress_bars
 from .iliffe_vector import Iliffe_vector
 from .sme import MASK_VALUES
 from .sme_synth import SME_DLL
-from .util import show_progress_bars
+from .util import show_progress_bars, warn_with_log
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,11 @@ class ContinuumNormalizationMask(ContinuumNormalizationAbstract):
 
         if "spec" not in sme or "wave" not in sme:
             # If there is no observation, we have no continuum scale
-            warnings.warn("Missing data for continuum fit")
+            warn_with_log(
+                "Missing data for continuum fit",
+                logger_obj=logger,
+                stacklevel=2,
+            )
             cscale = [1]
         elif sme.cscale_flag in ["none", -3]:
             cscale = [1]
@@ -133,7 +137,11 @@ class ContinuumNormalizationMask(ContinuumNormalizationAbstract):
                 res = least_squares(func, x0=c0, **least_squares_kwargs)
                 cscale = res.x
             except TypeError:
-                warnings.warn("Could not fit continuum, set continuum mask?")
+                warn_with_log(
+                    "Could not fit continuum, set continuum mask?",
+                    logger_obj=logger,
+                    stacklevel=2,
+                )
                 cscale = [1]
 
         return cscale
@@ -269,9 +277,11 @@ class ContinuumNormalizationMCMC(ContinuumNormalizationAbstract):
             sme.uncs = np.full(sme.spec.size, 1.0)
 
         if np.all(sme.mask_bad[segments].ravel()):
-            warnings.warn(
+            warn_with_log(
                 "Only bad pixels in this segments, can't determine radial velocity/continuum",
-                UserWarning,
+                category=UserWarning,
+                logger_obj=logger,
+                stacklevel=2,
             )
             return null_result(nseg, sme.cscale_degree)
 
@@ -293,8 +303,10 @@ class ContinuumNormalizationMCMC(ContinuumNormalizationAbstract):
         x_num = x_obs - sme.wave[segments][:, 0]
 
         if x_obs.size <= sme.cscale_degree:
-            warnings.warn(
-                "Not enough good pixels to determine radial velocity/continuum"
+            warn_with_log(
+                "Not enough good pixels to determine radial velocity/continuum",
+                logger_obj=logger,
+                stacklevel=2,
             )
             return null_result(nseg)
 
@@ -918,7 +930,11 @@ def determine_radial_velocity(
 
     if "spec" not in sme or "wave" not in sme:
         # No observation no radial velocity
-        warnings.warn("Missing data for radial velocity determination")
+        warn_with_log(
+            "Missing data for radial velocity determination",
+            logger_obj=logger,
+            stacklevel=2,
+        )
         rvel = 0
     elif sme.vrad_flag == "none":
         # vrad_flag says don't determine radial velocity

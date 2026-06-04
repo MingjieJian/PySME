@@ -36,8 +36,8 @@ def _parse_needed_arch_from_error(msg):
     if not m:
         return None
     a = m.group(1).lower()
-    print(f'Incompatible arch detected, will swith to new arch: {a}.')
-    print(f'Error message: {msg}')
+    logger.warning("Incompatible SMElib architecture detected; switching to %s", a)
+    logger.debug("Original architecture error: %s", msg)
     if a in ("arm64e", "arm64", "aarch64"):
         return "arm64"
     if a in ("x86_64", "amd64", "i386"):
@@ -75,7 +75,7 @@ def download_smelib(loc=None, pysme_version='default', force_arch=None):
             return "x86_64"
         if "universal2" in p:
             # 询问当前进程到底跑哪个切片
-            print("arch universal2 detected, checking machine arch")
+            logger.info("Detected universal2 Python; probing active machine architecture")
             m = platform.machine().lower()
             if m in ("arm64", "aarch64"):
                 return "arm64"
@@ -114,7 +114,7 @@ def download_smelib(loc=None, pysme_version='default', force_arch=None):
     github_releases_url = (
         f"https://github.com/MingjieJian/SMElib/releases/{release_subpath}"
     )
-    print("Downloading and installing the latest libsme version for this system")
+    logger.info("Downloading and installing the latest SMElib version for this system")
     aliases = {
         "Linux": "manylinux2014-x86_64",
         "Windows": "windows",
@@ -124,7 +124,7 @@ def download_smelib(loc=None, pysme_version='default', force_arch=None):
 
     try:
         system = aliases[system]
-        print("Identified OS: %s" % system)
+        logger.info("Identified platform alias: %s", system)
     except KeyError:
         raise KeyError(
             f"Could not find the associated compiled library for this system {system}."
@@ -138,10 +138,10 @@ def download_smelib(loc=None, pysme_version='default', force_arch=None):
         plat = sysconfig.get_platform()  # 'macosx-14.0-arm64' or 'macosx-10.9-x86_64'
         if force_arch is None:
             arch = interpreter_arch()
-            print(f'Auto detected arch is: {arch}')
+            logger.info("Auto-detected architecture: %s", arch)
         else:
             arch = force_arch
-            print(f'Forced arch is: {arch}')
+            logger.info("Using requested architecture override: %s", arch)
         system += f'-{arch}'
 
         # Search for the number after "Apple M"
@@ -163,14 +163,12 @@ def download_smelib(loc=None, pysme_version='default', force_arch=None):
     for sub in ("lib", "share/libsme"):
         shutil.rmtree(os.path.join(loc, sub), ignore_errors=True)
 
-    print("Downloading file %s" % url)
-    print(f"Creating folder for lib files: {loc}")
+    logger.info("Downloading SMElib archive %s", url)
+    logger.info("Creating folder for SMElib files: %s", loc)
     os.makedirs(loc, exist_ok=True)
     wget.download(url, out=loc)
-    # the wget progress bar, does not include a new line
-    print("")
 
-    print("Extracting file")
+    logger.info("Extracting SMElib archive")
     zipfile.ZipFile(fname).extractall(loc)
 
     _macos_unquarantine(loc)
@@ -180,11 +178,11 @@ def download_smelib(loc=None, pysme_version='default', force_arch=None):
     except FileNotFoundError:
         pass
 
-    print("done")
+    logger.info("SMElib download and extraction finished")
 
     if system.startswith("macos"):
         # Need to adjust the install_names in the dylib
-        print("Fixing the file paths in the .dylib file")
+        logger.info("Fixing install names for downloaded macOS dylibs")
         fname = realpath(get_full_libfile())
         subprocess.run(
             ["install_name_tool", "-id", fname, fname], capture_output=True, check=True
@@ -269,9 +267,11 @@ def download_compile_smelib(tag=None, outdir=f'{str(Path.home())}/.sme/SMElib'):
 
     with open("smelib_compile.log", "w") as f:
         f.write(proc.stdout)
-    
-    print(proc.stdout)
-    print(proc.stderr)
+
+    if proc.stdout:
+        logger.info("%s", proc.stdout.rstrip())
+    if proc.returncode != 0:
+        raise subprocess.CalledProcessError(proc.returncode, proc.args, output=proc.stdout)
     
     os.chdir(cwd)
     logger.info('Compilation finished.')
