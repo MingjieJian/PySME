@@ -492,6 +492,11 @@ class Grid:
 
     def scaled_rel_abund(self, abund):
         """Get the abundance of self.elem relative to Fe, i.e. [X/Fe]"""
+        # Hydrogen NLTE grids use H itself as the abundance reference.
+        # Using the generic [X/Fe] path would turn H into -[Fe/H] when the
+        # selected abundance pattern differs from the default solar pattern.
+        if self.elem == "H":
+            return 0.0
         sel = self.solar_rel_abund(abund, self.elem)
         sfe = self.solar_rel_abund(abund, "Fe")
         rabund = sel - sfe

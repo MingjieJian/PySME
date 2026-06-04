@@ -10,7 +10,7 @@ import pytest
 
 from pysme.abund import Abund
 from pysme.linelist.vald import ValdFile
-from pysme.nlte import DirectAccessFile, nlte
+from pysme.nlte import DirectAccessFile, Grid, nlte
 from pysme.sme import SME_Structure as SME_Struct
 from pysme.sme_synth import SME_DLL
 from pysme.synthesize import Synthesizer, synthesize_spectrum
@@ -80,6 +80,29 @@ def test_activate_nlte():
     # with a grid it should work
     sme.nlte.set_nlte("U", "test_grid.grd")
     assert sme.nlte.grids["U"] == "test_grid.grd"
+
+
+def test_h_abundance_coordinate_is_fixed_to_zero():
+    grid = Grid.__new__(Grid)
+    grid.elem = "H"
+    grid.solar = Abund.solar()
+    grid.abund_format = "H=12"
+
+    assert grid.scaled_rel_abund(Abund(monh=0.0, pattern="asplund2009")) == pytest.approx(0.0)
+    assert grid.scaled_rel_abund(Abund(monh=0.0, pattern="asplund2021")) == pytest.approx(0.0)
+
+
+def test_non_h_abundance_coordinate_is_unchanged():
+    grid = Grid.__new__(Grid)
+    grid.elem = "Ca"
+    grid.solar = Abund.solar()
+    grid.abund_format = "H=12"
+
+    rabund_2009 = grid.scaled_rel_abund(Abund(monh=0.0, pattern="asplund2009"))
+    rabund_2021 = grid.scaled_rel_abund(Abund(monh=0.0, pattern="asplund2021"))
+
+    assert rabund_2009 == pytest.approx(-0.02)
+    assert rabund_2021 == pytest.approx(-0.02)
 
 
 @skipif_lfs
