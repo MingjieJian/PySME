@@ -250,6 +250,25 @@ class AtmosphereInterpolator:
         if interpvar != "tau" and interpvar != "rhox":
             raise AtmosphereError("interpvar must be 'TAU' (default) or 'RHOX'")
 
+        has_spherical_height = (
+            getattr(atmo1, "radius", 0) > 1
+            and getattr(atmo2, "radius", 0) > 1
+            and "height" in tags1
+            and "height" in tags2
+        )
+
+        def to_interp_space(vtag, values):
+            values = np.asarray(values)
+            if vtag == "height":
+                return values
+            return np.log10(values)
+
+        def from_interp_space(vtag, values):
+            values = np.asarray(values)
+            if vtag == "height":
+                return values
+            return 10.0 ** values
+
         ##
         ## Define depth scale for both atmospheres
         ##
@@ -294,6 +313,8 @@ class AtmosphereInterpolator:
             vtags += ["tau"]
         if interpvar == "tau" and ok_rhox:
             vtags += ["rhox"]
+        if has_spherical_height:
+            vtags += ["height"]
         nvtag = len(vtags)
 
         # Adopt arbitrary uncertainties for shift determinations.
@@ -333,8 +354,8 @@ class AtmosphereInterpolator:
             if vtag not in tags2:
                 raise AtmosphereError("atmo2 does not contain " + vtag)
 
-            vect1 = np.log10(atmo1[vtag][mask1])
-            vect2 = np.log10(atmo2[vtag][mask2])
+            vect1 = to_interp_space(vtag, atmo1[vtag][mask1])
+            vect2 = to_interp_space(vtag, atmo2[vtag][mask2])
 
             # Fit the second atmosphere onto the first by finding the best horizontal
             # shift in depth2 and the best vertical shift in vect2.
@@ -391,8 +412,8 @@ class AtmosphereInterpolator:
         for ivtag, (vtag, par) in enumerate(zip(vtags, pars)):
 
             # Extract data
-            vect1 = np.log10(atmo1[vtag][mask1])
-            vect2 = np.log10(atmo2[vtag][mask2])
+            vect1 = to_interp_space(vtag, atmo1[vtag][mask1])
+            vect2 = to_interp_space(vtag, atmo2[vtag][mask2])
 
             # Identify output depth points that require extrapolation of atmosphere vector.
             depth1f = depth1 - par[0] * frac
@@ -438,7 +459,7 @@ class AtmosphereInterpolator:
             # Vector quantities that have already been interpolated.
             if tag in vtags:
                 ivtag = [i for i in range(nvtag) if tag == vtags[i]][0]
-                value = 10.0 ** vects[ivtag]
+                value = from_interp_space(tag, vects[ivtag])
 
             # Scalar quantities that should be interpolated using frac.
             if tag in stags:

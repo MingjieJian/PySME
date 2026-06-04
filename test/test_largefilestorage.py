@@ -8,7 +8,10 @@ from pysme.large_file_storage import setup_atmo, setup_nlte
 
 def lfs_available():
     config = Config()
-    r = requests.head(config["data.file_server"])
+    try:
+        r = requests.head(config["data.file_server"])
+    except requests.RequestException:
+        return False
     return r.status_code == 200
 
 
