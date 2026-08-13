@@ -2439,9 +2439,17 @@ class Synthesizer:
             fname_map = {k[:-1]: v for k, v in fname_map.items()}
             param = param[:-1]
 
+        def _set_no_strong_lines():
+            sme.linelist._lines['strong'] = np.zeros(n_lines_total, dtype=bool)
+            sme.linelist._lines['line_range_s'] = np.full(n_lines_total, np.nan, dtype=np.float32)
+            sme.linelist._lines['line_range_e'] = np.full(n_lines_total, np.nan, dtype=np.float32)
+
+        n_lines_total = len(sme.linelist)
+
         if len(param_grid) == 0:
             logger.warning("[cdr] Compressed strong-line database is empty; "
-                           "flag_strong_lines_by_database will be skipped.")
+                           "marking all lines non-strong.")
+            _set_no_strong_lines()
             return
 
         # ----- Select grid points within the parameter box around the current star -----
@@ -2464,18 +2472,29 @@ class Synthesizer:
 
         if filtered_grid.size == 0:
             logger.warning("[cdr] No grid points found within the parameter box; "
-                           "cannot flag strong lines from database.")
+                           "marking all lines non-strong.")
+            _set_no_strong_lines()
             return
 
-        n_lines_total = len(sme.linelist)
         wlcent = sme.linelist['wlcent']
 
         # ----- mode = 'or': use simplex vertices and OR-combine masks -----
-        if mode == 'or' and filtered_grid.shape[0] >= len(dims) + 1:
-            from scipy.spatial import Delaunay
+        if mode == 'or' and filtered_grid.shape[0] < len(dims) + 1:
+            logger.warning("[cdr] Only %d grid point(s) found within the parameter box; "
+                           "falling back to 'nearest' strategy.",
+                           filtered_grid.shape[0])
+            mode = 'nearest'
 
-            delaunay = Delaunay(filtered_grid)
-            simplex_index = delaunay.find_simplex(param)
+        if mode == 'or':
+            from scipy.spatial import Delaunay, QhullError
+
+            try:
+                delaunay = Delaunay(filtered_grid)
+                simplex_index = delaunay.find_simplex(param)
+            except QhullError as exc:
+                logger.warning("[cdr] Delaunay triangulation failed; falling back to "
+                               "'nearest' strategy. error=%s", exc)
+                simplex_index = -1
 
             if simplex_index >= 0:
                 logger.info("[cdr] Combining strong-line masks and line ranges from "

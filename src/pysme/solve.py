@@ -160,6 +160,7 @@ class SME_Solver:
         line_precompute_database=None,
         cdr_database=None,
         cdr_create=False,
+        keep_line_opacity=False,
         vbroad_expend_ratio=2,
         **_,
     ):
@@ -237,6 +238,7 @@ class SME_Solver:
                 line_precompute_database=line_precompute_database,
                 cdr_database=cdr_database,
                 cdr_create=cdr_create,
+                keep_line_opacity=keep_line_opacity,
                 vbroad_expend_ratio=vbroad_expend_ratio,
             )
         except AtmosphereError as ae:
@@ -300,6 +302,7 @@ class SME_Solver:
         line_precompute_database=None,
         cdr_database=None,
         cdr_create=False,
+        keep_line_opacity=False,
         vbroad_expend_ratio=2,
         **_,
     ):
@@ -716,6 +719,7 @@ class SME_Solver:
         line_precompute_database=None,
         cdr_database=None,
         cdr_create=False,
+        keep_line_opacity=False,
         vbroad_expend_ratio=2,
     ):
         """
@@ -899,6 +903,7 @@ class SME_Solver:
                         "line_precompute_database": line_precompute_database,
                         "cdr_database": cdr_database,
                         "cdr_create": cdr_create,
+                        "keep_line_opacity": keep_line_opacity,
                         "vbroad_expend_ratio": vbroad_expend_ratio,
                     },
                 )
@@ -934,6 +939,7 @@ class SME_Solver:
                 line_precompute_database=line_precompute_database,
                 cdr_database=cdr_database,
                 cdr_create=cdr_create,
+                keep_line_opacity=keep_line_opacity,
                 vbroad_expend_ratio=vbroad_expend_ratio,
             )
         else:
